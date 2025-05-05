@@ -55,13 +55,18 @@ function parseDate(dateString: string): Date {
 
 function parseAmount(amountString: string): number {
   try {
-    // Remove cifrão e pontos de milhar, substitui vírgula por ponto
-    const cleanedValue = amountString
-      .replace(/[R$\s]/g, "") // Remove R$ e espaços
-      .replace(/\./g, "")     // Remove pontos de milhar
-      .replace(",", ".");     // Substitui vírgula decimal por ponto
+    // Verifica se o valor já está no formato do CSV americano (43.98)
+    if (/^-?\d+\.\d+$/.test(amountString)) {
+      return parseFloat(amountString);
+    }
     
-    // Converte para número (não multiplicamos por 100 aqui)
+    // Se estiver no formato brasileiro, converte (R$ 43,98)
+    const cleanedValue = amountString
+      .replace(/[R$\s]/g, "")     // Remove R$ e espaços
+      .replace(/\./g, "")         // Remove pontos de milhar
+      .replace(",", ".");         // Substitui vírgula decimal por ponto
+    
+    // Converte para número
     const amount = parseFloat(cleanedValue);
     
     // Verifica se o valor é válido

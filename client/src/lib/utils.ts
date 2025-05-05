@@ -11,13 +11,19 @@ export function formatCurrency(value: number): string {
     return 'R$ 0,00';
   }
   
+  // Corrige o possível problema de multiplicação automática
+  // Verifica se o valor parece estar multiplicado por 100 (muitos dígitos)
+  const correctedValue = Math.abs(value) > 10000 && Math.abs(value) % 100 === 0 
+    ? value / 100 
+    : value;
+  
   // Formata o valor como moeda brasileira (R$)
   return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
     currency: 'BRL',
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
-  }).format(value);
+  }).format(correctedValue);
 }
 
 export function formatDate(date: Date | string): string {
