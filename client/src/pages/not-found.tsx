@@ -1,21 +1,24 @@
-import { Card, CardContent } from "@/components/ui/card";
-import { AlertCircle } from "lucide-react";
+import { Link } from "wouter";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft } from "lucide-react";
+import { nubankColors } from "@/lib/nubank-theme";
 
 export default function NotFound() {
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-gray-50">
-      <Card className="w-full max-w-md mx-4">
-        <CardContent className="pt-6">
-          <div className="flex mb-4 gap-2">
-            <AlertCircle className="h-8 w-8 text-red-500" />
-            <h1 className="text-2xl font-bold text-gray-900">404 Page Not Found</h1>
-          </div>
-
-          <p className="mt-4 text-sm text-gray-600">
-            Did you forget to add the page to the router?
-          </p>
-        </CardContent>
-      </Card>
+    <div className="flex-1 flex flex-col items-center justify-center p-8">
+      <div className="text-center max-w-md">
+        <h1 className="text-6xl font-bold mb-4" style={{ color: nubankColors.primary }}>404</h1>
+        <h2 className="text-2xl font-semibold mb-2" style={{ color: nubankColors.primary }}>Página não encontrada</h2>
+        <p className="mb-6" style={{ color: nubankColors.textTertiary }}>
+          A página que você está procurando não existe ou foi movida.
+        </p>
+        <Link href="/">
+          <Button className="flex items-center gap-2" style={{ backgroundColor: nubankColors.primary, color: 'white' }}>
+            <ArrowLeft className="h-4 w-4" />
+            <span>Voltar para o Dashboard</span>
+          </Button>
+        </Link>
+      </div>
     </div>
   );
 }

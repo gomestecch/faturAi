@@ -6,7 +6,7 @@ export default function Footer() {
   const currentYear = new Date().getFullYear();
   
   return (
-    <footer className="border-t mt-auto py-8" style={{ borderColor: 'rgba(138, 5, 190, 0.1)' }}>
+    <footer className="border-t py-8" style={{ borderColor: 'rgba(138, 5, 190, 0.1)' }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
           <div className="flex flex-col items-center md:items-start">
@@ -47,7 +47,7 @@ export default function Footer() {
             <ul className="space-y-2">
               <li><Link href="/import" style={{ color: nubankColors.textSecondary }}>Importar Faturas</Link></li>
               <li><Link href="/categories" style={{ color: nubankColors.textSecondary }}>Gerenciar Categorias</Link></li>
-              <li><a href="#" style={{ color: nubankColors.textSecondary }}>Planejamento</a></li>
+              <li><Link href="/" style={{ color: nubankColors.textSecondary }}>Dashboard</Link></li>
               <li><a href="#" style={{ color: nubankColors.textSecondary }}>Preços</a></li>
             </ul>
           </div>

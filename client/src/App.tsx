@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { Switch, Route, Link } from "wouter";
+import { Switch, Route, Link, useLocation } from "wouter";
 import { Toaster } from "@/components/ui/toaster";
 import { useToast } from "@/hooks/use-toast";
 import NotFound from "@/pages/not-found";
@@ -36,10 +36,10 @@ import { nubankColors } from "@/lib/nubank-theme";
 // Import pages
 import ImportPage from "@/pages/import-page";
 import CategoriesPage from "@/pages/categories-page";
-import HomePage from "@/pages/home-page";
 
 function App() {
   const { toast } = useToast();
+  const [location] = useLocation();
 
   // State for all transactions from all files
   const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
@@ -231,8 +231,8 @@ function App() {
   return (
     <div className="flex flex-col min-h-screen">
       <Header />
-      <main className="flex-grow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <main className="flex-grow flex flex-col">
+        <div className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full">
           <Switch>
             <Route path="/">
               <div className="mb-6">
@@ -352,7 +352,9 @@ function App() {
             <Route path="/categories">
               <CategoriesPage />
             </Route>
-            <Route component={NotFound} />
+            <Route>
+              <NotFound />
+            </Route>
           </Switch>
         </div>
       </main>
