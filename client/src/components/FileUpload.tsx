@@ -91,16 +91,27 @@ export default function FileUpload({
   };
 
   return (
-    <Card className="mb-6">
+    <Card className="mb-6 border-border/40 shadow-sm overflow-hidden">
+      <div className="flex items-center p-6 bg-gradient-to-r from-primary/10 to-background border-b">
+        <div>
+          <h2 className="text-2xl font-bold text-foreground mb-1">Importe suas faturas</h2>
+          <p className="text-muted-foreground">
+            Carregue seus extratos do Nubank para análise detalhada de gastos
+          </p>
+        </div>
+      </div>
+      
       <CardContent className="pt-6">
-        <h2 className="text-2xl font-bold text-foreground mb-4">Importe suas faturas</h2>
-        <p className="text-muted-foreground mb-6">
-          Carregue suas faturas de cartão de crédito em formato CSV para análise. Seus dados são processados
-          localmente e não são enviados para servidores.
-        </p>
+        <div className="mb-6 text-sm text-muted-foreground">
+          <p>
+            Seus dados são processados localmente e não são enviados para servidores. 
+            Suas informações financeiras ficam apenas no seu navegador.
+          </p>
+        </div>
         
         <div 
-          className={`drop-zone p-8 text-center mb-4 ${isDragActive ? 'active' : ''}`}
+          className={`border-2 border-dashed ${isDragActive ? 'border-primary bg-primary/5' : 'border-border'} 
+            rounded-lg p-8 text-center mb-6 cursor-pointer transition-colors hover:border-primary/50 hover:bg-primary/5`}
           onDragOver={(e) => { preventDefault(e); setIsDragActive(true); }}
           onDragEnter={(e) => { preventDefault(e); setIsDragActive(true); }}
           onDragLeave={(e) => { preventDefault(e); setIsDragActive(false); }}
@@ -114,7 +125,7 @@ export default function FileUpload({
               : "Arraste seu arquivo CSV ou"
             }
           </p>
-          <Button variant="default" className="bg-primary hover:bg-primary/90 px-6 py-6 text-lg font-medium h-auto">
+          <Button variant="default" className="bg-primary hover:bg-primary/90 px-6 text-md font-medium">
             {allowMultiple ? "Selecionar Arquivos" : "Selecionar Arquivo"}
           </Button>
           <input
@@ -130,6 +141,22 @@ export default function FileUpload({
           <p className="mt-4 text-sm text-muted-foreground">
             Compatível com arquivos CSV da Nubank, Itaú, Bradesco, Banco do Brasil e outros
           </p>
+        </div>
+        
+        {/* Instruções para baixar fatura do Nubank */}
+        <div className="bg-muted/50 rounded-lg p-4 mb-4">
+          <h3 className="text-sm font-medium mb-2 flex items-center gap-2">
+            <CheckCircle className="h-4 w-4 text-primary" />
+            Como baixar sua fatura do Nubank
+          </h3>
+          <ol className="text-sm text-muted-foreground list-decimal pl-5 space-y-1">
+            <li>Abra o aplicativo do Nubank</li>
+            <li>Acesse a área de cartão de crédito</li>
+            <li>Toque em "Faturas"</li>
+            <li>Selecione a fatura que deseja analisar</li>
+            <li>Pressione o botão "Exportar fatura" ou ícone de download</li>
+            <li>Selecione formato CSV</li>
+          </ol>
         </div>
         
         {/* Processing state */}

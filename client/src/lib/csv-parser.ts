@@ -1,188 +1,149 @@
-import Papa from 'papaparse';
-import { Transaction } from '@/types';
-import { detectCategory } from './category-detector';
+import Papa from "papaparse";
+import { Transaction } from "@/types";
+import { detectCategory } from "./categories";
 
 interface RawCsvRow {
   [key: string]: string;
 }
 
-// Common CSV column patterns from major credit card issuers
-const DATE_PATTERNS = [
-  'data', 'date', 'dt', 'data transação', 'data da transação', 'data da compra', 
-  'data-transação', 'date of transaction'
-];
-
-const DESCRIPTION_PATTERNS = [
-  'descrição', 'descricao', 'estabelecimento', 'histórico', 'historico', 'lançamento',
-  'description', 'merchant', 'establishment', 'desc', 'title' // Adding 'title' for Nubank
-];
-
-const AMOUNT_PATTERNS = [
-  'valor', 'value', 'amount', 'preço', 'preco', 'preço em reais', 'preco em reais',
-  'valor em reais', 'quantia', 'total'
-];
-
-// Map column headers to Transaction fields
 function mapHeaderToField(header: string): string | null {
-  const lowerHeader = header.toLowerCase().trim();
+  // Mapeamento para formato Nubank
+  if (header.includes("data") || header.includes("date")) return "date";
+  if (header.includes("título") || header.includes("title") || header.includes("description")) return "description";
+  if (header.includes("valor") || header.includes("amount")) return "amount";
+  if (header.includes("categoria") || header.includes("category")) return "category";
   
-  if (DATE_PATTERNS.some(pattern => lowerHeader.includes(pattern))) {
-    return 'date';
-  }
-  
-  if (DESCRIPTION_PATTERNS.some(pattern => lowerHeader.includes(pattern))) {
-    return 'description';
-  }
-  
-  if (AMOUNT_PATTERNS.some(pattern => lowerHeader.includes(pattern))) {
-    return 'amount';
-  }
+  // Outros bancos podem usar nomes diferentes
+  // Exemplos para outros bancos comuns no Brasil
+  if (header.includes("lançamento") || header.includes("transação")) return "description";
+  if (header.includes("histórico") || header.includes("estabelecimento")) return "description";
   
   return null;
 }
 
-// Parse date strings in various formats
 function parseDate(dateString: string): Date {
-  // Handle different date formats (DD/MM/YYYY, MM/DD/YYYY, YYYY-MM-DD)
-  dateString = dateString.trim();
-  
-  // Try to parse with browser's built-in date parsing
-  const parsed = new Date(dateString);
-  if (!isNaN(parsed.getTime())) {
-    return parsed;
+  // Tenta formatos comuns no Brasil
+  try {
+    // Formato DD/MM/YYYY ou DD-MM-YYYY
+    if (dateString.includes("/") || dateString.includes("-")) {
+      const parts = dateString.split(/[-\/]/);
+      if (parts.length === 3) {
+        // Assume formato brasileiro (DD/MM/YYYY)
+        if (parts[0].length <= 2 && parts[1].length <= 2) {
+          return new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+        }
+        // Formato americano (YYYY-MM-DD)
+        else if (parts[0].length === 4) {
+          return new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+        }
+      }
+    }
+    
+    // Tenta com Date.parse como fallback
+    const timestamp = Date.parse(dateString);
+    if (!isNaN(timestamp)) {
+      return new Date(timestamp);
+    }
+    
+    // Valor padrão para datas que não podem ser parseadas
+    return new Date();
+  } catch (error) {
+    console.error("Erro ao parsear data:", dateString, error);
+    return new Date();
   }
-  
-  // Common Brazilian format DD/MM/YYYY
-  const brPattern = /^(\d{1,2})[\/\.-](\d{1,2})[\/\.-](\d{2,4})$/;
-  const brMatch = dateString.match(brPattern);
-  if (brMatch) {
-    const [_, day, month, year] = brMatch;
-    const fullYear = year.length === 2 ? `20${year}` : year;
-    return new Date(`${fullYear}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`);
-  }
-  
-  // American format MM/DD/YYYY
-  const usPattern = /^(\d{1,2})[\/\.-](\d{1,2})[\/\.-](\d{4})$/;
-  const usMatch = dateString.match(usPattern);
-  if (usMatch) {
-    const [_, month, day, year] = usMatch;
-    return new Date(`${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`);
-  }
-  
-  // Fallback to current date if unable to parse
-  console.error(`Unable to parse date: ${dateString}`);
-  return new Date();
 }
 
-// Parse amount strings in various formats
 function parseAmount(amountString: string): number {
-  if (!amountString) return 0;
-  
-  // Check if it's already a negative number (like in Nubank exports)
-  const hasNegativeSign = amountString.trim().startsWith('-');
-  
-  // Remove currency symbols, spaces and convert commas to periods for decimal
-  let cleanAmount = amountString
-    .replace(/[^\d,-\.]/g, '') // Remove all non-numeric chars except , - .
-    .replace(',', '.'); // Convert comma to period for decimal
-  
-  // Parse to float
-  let amount = parseFloat(cleanAmount);
-  if (isNaN(amount)) return 0;
-  
-  // Determine if this is a payment (negative amount) or expense (positive amount)
-  // In Nubank, payments show as negative numbers, expenses as positive
-  if (hasNegativeSign) {
-    // This is a payment or credit, keep it negative for proper categorization
-    return -Math.abs(amount);
-  } else {
-    // This is a debit or expense, keep it positive
-    return Math.abs(amount);
+  try {
+    // Remove cifrão e pontos de milhar, substitui vírgula por ponto
+    const cleanedValue = amountString
+      .replace(/[R$\s]/g, "")
+      .replace(/\./g, "")
+      .replace(",", ".");
+    
+    // Converte para número
+    return parseFloat(cleanedValue);
+  } catch (error) {
+    console.error("Erro ao parsear valor:", amountString, error);
+    return 0;
   }
 }
 
-// Main CSV parsing function
 export async function parseCsvFile(file: File): Promise<Transaction[]> {
   return new Promise((resolve, reject) => {
     Papa.parse(file, {
       header: true,
       skipEmptyLines: true,
-      encoding: 'UTF-8',
       complete: (results) => {
         try {
-          const { data, errors, meta } = results;
+          const rows = results.data as RawCsvRow[];
           
-          if (errors.length > 0) {
-            console.error('CSV parsing errors:', errors);
-            reject(new Error('Erro ao processar o arquivo CSV. Verifique o formato e tente novamente.'));
+          if (rows.length === 0) {
+            reject("O arquivo CSV está vazio ou não contém dados válidos.");
             return;
           }
           
-          if (!Array.isArray(data) || data.length === 0) {
-            reject(new Error('Arquivo CSV vazio ou inválido.'));
-            return;
-          }
+          // Detecta os campos no cabeçalho
+          const firstRow = rows[0];
+          const headers = Object.keys(firstRow);
           
-          // Detect column mapping
-          const headerMapping: Record<string, string> = {};
-          const headers = meta.fields || [];
+          const fieldMap: Record<string, string> = {};
           
-          headers.forEach(header => {
-            const field = mapHeaderToField(header);
+          // Mapeia os cabeçalhos para os campos internos
+          for (const header of headers) {
+            const field = mapHeaderToField(header.toLowerCase());
             if (field) {
-              headerMapping[header] = field;
+              fieldMap[header] = field;
             }
-          });
+          }
           
-          // If we couldn't identify the necessary columns, reject
-          const requiredFields = ['date', 'description', 'amount'];
-          const foundFields = Object.values(headerMapping);
+          // Verifica se os campos obrigatórios estão presentes
+          const requiredFields = ["date", "description", "amount"];
+          const mappedFields = Object.values(fieldMap);
+          const missingFields = requiredFields.filter(field => !mappedFields.includes(field));
           
-          const missingFields = requiredFields.filter(field => !foundFields.includes(field));
           if (missingFields.length > 0) {
-            reject(new Error(`Colunas necessárias não encontradas: ${missingFields.join(', ')}`));
+            reject(`O arquivo CSV não contém os campos obrigatórios: ${missingFields.join(", ")}`);
             return;
           }
           
-          // Transform raw data to Transaction objects
-          const transactions: Transaction[] = (data as RawCsvRow[]).map(row => {
-            // Extract values using mapped headers
-            let dateValue = '';
-            let descriptionValue = '';
-            let amountValue = '';
+          // Converte as linhas para o formato de transação
+          const transactions: Transaction[] = rows.map(row => {
+            const transaction: Partial<Transaction> = {};
             
-            // Find the columns for each field
-            Object.entries(headerMapping).forEach(([header, field]) => {
-              const value = row[header];
-              if (field === 'date') dateValue = value;
-              else if (field === 'description') descriptionValue = value;
-              else if (field === 'amount') amountValue = value;
-            });
+            // Mapeia cada campo da linha para o modelo de dados
+            for (const [header, value] of Object.entries(row)) {
+              const field = fieldMap[header];
+              if (!field) continue;
+              
+              if (field === "date") {
+                transaction.date = parseDate(value);
+              } else if (field === "description") {
+                transaction.description = value.trim();
+              } else if (field === "amount") {
+                transaction.amount = parseAmount(value);
+              } else if (field === "category") {
+                transaction.category = value.trim();
+              }
+            }
             
-            const parsedDate = parseDate(dateValue);
-            const amount = parseAmount(amountValue);
-            const description = descriptionValue.trim();
+            // Detecta a categoria automaticamente se não estiver presente
+            if (!transaction.category && transaction.description) {
+              transaction.category = detectCategory(transaction.description);
+            }
             
-            // Auto-detect category based on description
-            const category = detectCategory(description);
-            
-            return {
-              date: parsedDate,
-              description,
-              amount,
-              category
-            };
+            return transaction as Transaction;
           });
           
           resolve(transactions);
         } catch (error) {
-          console.error('Error processing CSV:', error);
-          reject(new Error('Erro ao processar o arquivo. Verifique o formato e tente novamente.'));
+          console.error("Erro ao processar arquivo CSV:", error);
+          reject("Ocorreu um erro ao processar o arquivo CSV. Verifique se o formato está correto.");
         }
       },
       error: (error) => {
-        console.error('Papa Parse error:', error);
-        reject(new Error('Erro ao ler o arquivo CSV.'));
+        console.error("Erro ao parsear CSV:", error);
+        reject(`Erro ao parsear CSV: ${error.message}`);
       }
     });
   });
