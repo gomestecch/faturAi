@@ -1,4 +1,4 @@
-# FaturAi - Sistema de Análise de Faturamento
+# FaturAi
 
 Aplicação para análise e categorização de faturas bancárias, com visualização de dados e insights financeiros.
 
@@ -11,11 +11,6 @@ Aplicação para análise e categorização de faturas bancárias, com visualiza
 - Dashboard interativo
 - Armazenamento local de dados
 
-## Requisitos
-
-- Node.js v16 ou superior
-- npm ou yarn
-
 ## Tecnologias
 
 - React
@@ -26,7 +21,7 @@ Aplicação para análise e categorização de faturas bancárias, com visualiza
 - Chart.js
 - SQLite com Drizzle ORM
 
-## Configuração
+## Instalação e Configuração
 
 1. Clone o repositório:
 ```bash
@@ -41,11 +36,7 @@ npm install
 
 ## Executando o projeto
 
-O projeto pode ser executado de duas formas:
-
 ### Usando o script de inicialização (recomendado)
-
-O script `start.sh` configura automaticamente as variáveis de ambiente necessárias e inicia o servidor na porta 5000:
 
 ```bash
 # Desenvolvimento
@@ -61,8 +52,11 @@ O script `start.sh` configura automaticamente as variáveis de ambiente necessá
 # Modo de desenvolvimento
 npm run start:dev
 
-# Modo de produção
-npm run build && npm run start
+# Construir para produção
+npm run build
+
+# Iniciar em produção
+npm run start
 ```
 
 ## Estrutura do projeto
