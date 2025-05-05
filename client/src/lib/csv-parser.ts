@@ -7,16 +7,37 @@ interface RawCsvRow {
 }
 
 function mapHeaderToField(header: string): string | null {
-  // Mapeamento para formato Nubank
-  if (header.includes("data") || header.includes("date")) return "date";
-  if (header.includes("título") || header.includes("title") || header.includes("description")) return "description";
-  if (header.includes("valor") || header.includes("amount")) return "amount";
-  if (header.includes("categoria") || header.includes("category")) return "category";
+  const headerLower = header.toLowerCase();
   
-  // Outros bancos podem usar nomes diferentes
-  // Exemplos para outros bancos comuns no Brasil
-  if (header.includes("lançamento") || header.includes("transação")) return "description";
-  if (header.includes("histórico") || header.includes("estabelecimento")) return "description";
+  // Mapeamento para formato Nubank e outros bancos
+  if (headerLower.includes("data") || 
+      headerLower.includes("date") || 
+      headerLower.includes("dia") || 
+      headerLower.includes("dt"))
+      return "date";
+      
+  if (headerLower.includes("título") ||
+      headerLower.includes("title") || 
+      headerLower.includes("descrição") || 
+      headerLower.includes("description") || 
+      headerLower.includes("histórico") || 
+      headerLower.includes("estabelecimento") ||
+      headerLower.includes("lançamento") ||
+      headerLower.includes("transação"))
+      return "description";
+      
+  if (headerLower.includes("valor") || 
+      headerLower.includes("amount") || 
+      headerLower.includes("preço") || 
+      headerLower.includes("price") || 
+      headerLower.includes("r$"))
+      return "amount";
+      
+  if (headerLower.includes("categoria") || 
+      headerLower.includes("category") || 
+      headerLower.includes("tipo") || 
+      headerLower.includes("type"))
+      return "category";
   
   return null;
 }
@@ -46,6 +67,7 @@ function parseDate(dateString: string): Date {
     }
     
     // Valor padrão para datas que não podem ser parseadas
+    console.warn("Data não reconhecida, usando data atual:", dateString);
     return new Date();
   } catch (error) {
     console.error("Erro ao parsear data:", dateString, error);
@@ -55,13 +77,16 @@ function parseDate(dateString: string): Date {
 
 function parseAmount(amountString: string): number {
   try {
+    // Remove espaços e caracteres não numéricos, exceto pontos e vírgulas
+    let cleanedValue = amountString.trim();
+
     // Verifica se o valor já está no formato do CSV americano (43.98)
-    if (/^-?\d+\.\d+$/.test(amountString)) {
-      return parseFloat(amountString);
+    if (/^-?\d+\.\d+$/.test(cleanedValue)) {
+      return parseFloat(cleanedValue);
     }
     
     // Se estiver no formato brasileiro, converte (R$ 43,98)
-    const cleanedValue = amountString
+    cleanedValue = cleanedValue
       .replace(/[R$\s]/g, "")     // Remove R$ e espaços
       .replace(/\./g, "")         // Remove pontos de milhar
       .replace(",", ".");         // Substitui vírgula decimal por ponto
@@ -121,32 +146,50 @@ export async function parseCsvFile(file: File): Promise<Transaction[]> {
           }
           
           // Converte as linhas para o formato de transação
-          const transactions: Transaction[] = rows.map(row => {
-            const transaction: Partial<Transaction> = {};
-            
-            // Mapeia cada campo da linha para o modelo de dados
-            for (const [header, value] of Object.entries(row)) {
-              const field = fieldMap[header];
-              if (!field) continue;
+          const transactions: Transaction[] = [];
+          
+          rows.forEach((row, index) => {
+            try {
+              const transaction: Partial<Transaction> = {};
               
-              if (field === "date") {
-                transaction.date = parseDate(value);
-              } else if (field === "description") {
-                transaction.description = value.trim();
-              } else if (field === "amount") {
-                transaction.amount = parseAmount(value);
-              } else if (field === "category") {
-                transaction.category = value.trim();
+              // Mapeia cada campo da linha para o modelo de dados
+              for (const [header, value] of Object.entries(row)) {
+                const field = fieldMap[header];
+                if (!field) continue;
+                
+                if (field === "date") {
+                  transaction.date = parseDate(value);
+                } else if (field === "description") {
+                  transaction.description = value.trim();
+                } else if (field === "amount") {
+                  transaction.amount = parseAmount(value);
+                } else if (field === "category") {
+                  transaction.category = value.trim();
+                }
               }
+              
+              // Verifica se a transação tem todos os campos necessários
+              if (!transaction.date || !transaction.description || transaction.amount === undefined) {
+                console.warn(`Linha ${index + 1} ignorada por falta de dados obrigatórios:`, row);
+                return;
+              }
+              
+              // Detecta a categoria automaticamente se não estiver presente
+              if (!transaction.category && transaction.description) {
+                transaction.category = detectCategory(transaction.description);
+              }
+              
+              transactions.push(transaction as Transaction);
+            } catch (error) {
+              console.error(`Erro ao processar linha ${index + 1}:`, error, row);
+              // Continua processando as outras linhas
             }
-            
-            // Detecta a categoria automaticamente se não estiver presente
-            if (!transaction.category && transaction.description) {
-              transaction.category = detectCategory(transaction.description);
-            }
-            
-            return transaction as Transaction;
           });
+          
+          if (transactions.length === 0) {
+            reject("Nenhuma transação válida encontrada no arquivo.");
+            return;
+          }
           
           resolve(transactions);
         } catch (error) {

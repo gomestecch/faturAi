@@ -53,6 +53,8 @@ interface State {
   toasts: ToasterToast[]
 }
 
+const initialState: State = { toasts: [] }
+
 const toastTimeouts = new Map<string, ReturnType<typeof setTimeout>>()
 
 const addToRemoveQueue = (toastId: string) => {
@@ -128,7 +130,7 @@ export const reducer = (state: State, action: Action): State => {
 
 const listeners: Array<(state: State) => void> = []
 
-let memoryState: State = { toasts: [] }
+let memoryState: State = initialState
 
 function dispatch(action: Action) {
   memoryState = reducer(memoryState, action)
@@ -173,13 +175,14 @@ function useToast() {
 
   React.useEffect(() => {
     listeners.push(setState)
+    
     return () => {
       const index = listeners.indexOf(setState)
       if (index > -1) {
         listeners.splice(index, 1)
       }
     }
-  }, [state])
+  }, [])
 
   return {
     ...state,

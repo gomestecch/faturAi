@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import * as React from "react";
 import { Switch, Route, Link, useLocation } from "wouter";
 import { Toaster } from "@/components/ui/toaster";
 import { useToast } from "@/hooks/use-toast";
@@ -44,26 +44,26 @@ function App() {
   const [location] = useLocation();
 
   // State for all transactions from all files
-  const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
+  const [allTransactions, setAllTransactions] = React.useState<Transaction[]>([]);
   
   // State for filtered transactions (by date range)
-  const [filteredTransactions, setFilteredTransactions] = useState<Transaction[]>([]);
+  const [filteredTransactions, setFilteredTransactions] = React.useState<Transaction[]>([]);
   
   // State for tracking uploaded files
-  const [uploadedFiles, setUploadedFiles] = useState<{name: string, count: number}[]>([]);
+  const [uploadedFiles, setUploadedFiles] = React.useState<{name: string, count: number}[]>([]);
   
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
   
   // Date filter state
-  const [startDate, setStartDate] = useState<Date>(new Date(2000, 0, 1));
-  const [endDate, setEndDate] = useState<Date>(new Date(2099, 11, 31));
+  const [startDate, setStartDate] = React.useState<Date>(new Date(2000, 0, 1));
+  const [endDate, setEndDate] = React.useState<Date>(new Date(2099, 11, 31));
   
   // Alert dialog state
-  const [showClearDataDialog, setShowClearDataDialog] = useState(false);
+  const [showClearDataDialog, setShowClearDataDialog] = React.useState(false);
 
   // Carregar dados do localStorage quando o componente é montado
-  useEffect(() => {
+  React.useEffect(() => {
     if (hasSavedData()) {
       const savedTransactions = loadTransactions();
       setAllTransactions(savedTransactions);
@@ -99,7 +99,7 @@ function App() {
   }, [toast]);
 
   // Update filtered transactions when all transactions or date range changes
-  useEffect(() => {
+  React.useEffect(() => {
     // Filtragem de gastos (remover pagamentos - valores negativos)
     const onlyExpenses = allTransactions.filter(transaction => transaction.amount > 0);
     
@@ -113,14 +113,14 @@ function App() {
   }, [allTransactions, startDate, endDate]);
 
   // Salvar transações no localStorage quando elas mudam
-  useEffect(() => {
+  React.useEffect(() => {
     if (allTransactions.length > 0) {
       saveTransactions(allTransactions);
     }
   }, [allTransactions]);
 
   // Check if we have any transactions
-  const hasTransactions = useMemo(() => allTransactions.length > 0, [allTransactions]);
+  const hasTransactions = React.useMemo(() => allTransactions.length > 0, [allTransactions]);
 
   // Handle file upload
   const handleFileUpload = (
@@ -221,7 +221,7 @@ function App() {
   };
   
   // Atualizar categorias em todas as transações
-  const handleCategoryUpdated = useCallback(() => {
+  const handleCategoryUpdated = React.useCallback(() => {
     setAllTransactions(prev => 
       prev.map(transaction => ({
         ...transaction,

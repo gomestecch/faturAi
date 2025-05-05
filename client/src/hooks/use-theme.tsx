@@ -1,3 +1,4 @@
+import * as React from 'react';
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 
 type Theme = "dark" | "light" | "system";
@@ -27,34 +28,57 @@ export function ThemeProvider({
   ...props
 }: ThemeProviderProps) {
   const [theme, setTheme] = useState<Theme>(
-    () => (localStorage.getItem(storageKey) as Theme) || defaultTheme
+    () => {
+      try {
+        if (typeof window !== 'undefined' && window.localStorage) {
+          const storedTheme = localStorage.getItem(storageKey);
+          return (storedTheme as Theme) || defaultTheme;
+        }
+        return defaultTheme;
+      } catch (e) {
+        console.warn("Erro ao acessar localStorage:", e);
+        return defaultTheme;
+      }
+    }
   );
 
   useEffect(() => {
-    const root = window.document.documentElement;
-    
-    root.classList.remove("light", "dark");
-    
-    if (theme === "system") {
-      const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
-        .matches
-        ? "dark"
-        : "light";
-      
-      root.classList.add(systemTheme);
-      return;
+    try {
+      if (typeof window !== 'undefined' && window.document) {
+        const root = window.document.documentElement;
+        
+        root.classList.remove("light", "dark");
+        
+        if (theme === "system") {
+          const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
+            .matches
+            ? "dark"
+            : "light";
+          
+          root.classList.add(systemTheme);
+          return;
+        }
+        
+        root.classList.add(theme);
+      }
+    } catch (error) {
+      console.error("Erro ao aplicar tema:", error);
     }
-    
-    root.classList.add(theme);
   }, [theme]);
 
-  const value = {
+  const value = React.useMemo(() => ({
     theme,
-    setTheme: (theme: Theme) => {
-      localStorage.setItem(storageKey, theme);
-      setTheme(theme);
+    setTheme: (newTheme: Theme) => {
+      try {
+        if (typeof window !== 'undefined' && window.localStorage) {
+          localStorage.setItem(storageKey, newTheme);
+        }
+      } catch (e) {
+        console.warn("Erro ao acessar localStorage:", e);
+      }
+      setTheme(newTheme);
     },
-  };
+  }), [theme, storageKey]);
 
   return (
     <ThemeProviderContext.Provider {...props} value={value}>
