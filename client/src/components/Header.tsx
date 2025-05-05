@@ -1,6 +1,6 @@
 import { Link } from "wouter";
 import ThemeToggle from "@/components/ThemeToggle";
-import { Wallet, SparkleIcon, Menu, User, HelpCircle } from "lucide-react";
+import { Wallet, SparkleIcon, Menu, User, HelpCircle, BarChart3 } from "lucide-react";
 import { nubankColors } from "@/lib/nubank-theme";
 import { Button } from "@/components/ui/button";
 
@@ -27,6 +27,13 @@ export default function Header() {
           </Link>
           
           <div className="flex items-center space-x-4">
+            <Link href="/dashboard">
+              <Button variant="ghost" className="text-white hover:text-white hover:bg-white/10">
+                <BarChart3 className="h-4 w-4 mr-2" />
+                Dashboard
+              </Button>
+            </Link>
+            
             <Link href="/import">
               <Button variant="ghost" className="text-white hover:text-white hover:bg-white/10">
                 Importar

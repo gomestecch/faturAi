@@ -36,6 +36,8 @@ import { nubankColors } from "@/lib/nubank-theme";
 // Import pages
 import ImportPage from "@/pages/import-page";
 import CategoriesPage from "@/pages/categories-page";
+import DashboardPage from "@/pages/dashboard-page";
+import HomePage from "@/pages/home-page";
 
 function App() {
   const { toast } = useToast();
@@ -235,123 +237,27 @@ function App() {
         <div className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full">
           <Switch>
             <Route path="/">
-              <div className="mb-6">
-                <div className="flex justify-between items-center mb-8">
-                  <h1 className="text-3xl font-bold" style={{ color: nubankColors.primary }}>Dashboard FaturAi</h1>
-                  <div className="flex gap-3">
-                    <Link href="/import">
-                      <Button style={{ 
-                        backgroundColor: nubankColors.primary, 
-                        color: 'white',
-                        border: 'none'
-                      }}>
-                        <Upload className="h-4 w-4 mr-2" />
-                        Importar Faturas
-                      </Button>
-                    </Link>
-                    <Link href="/categories">
-                      <Button variant="outline" style={{ 
-                        borderColor: nubankColors.primary, 
-                        color: nubankColors.primary 
-                      }}>
-                        <Plus className="h-4 w-4 mr-2" />
-                        Gerenciar Categorias
-                      </Button>
-                    </Link>
-                  </div>
-                </div>
-                
-                {/* Lista de arquivos importados */}
-                {uploadedFiles.length > 0 && (
-                  <div className="mb-6">
-                    <div className="flex flex-wrap justify-between items-center mb-2">
-                      <h3 className="text-sm font-medium">Arquivos importados:</h3>
-                      
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="outline" size="sm">
-                            <Save className="h-4 w-4 mr-2" />
-                            Opções de Dados
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={handleExportJSON}>
-                            <Download className="h-4 w-4 mr-2" />
-                            Exportar JSON
-                          </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            onClick={() => setShowClearDataDialog(true)}
-                            className="text-destructive focus:text-destructive"
-                          >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Limpar todos os dados
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                    
-                    <div className="flex flex-wrap gap-2">
-                      {uploadedFiles.map((file, index) => (
-                        <Badge key={index} variant="outline" className="flex items-center gap-1 px-3 py-1">
-                          <span>{file.name} ({file.count} transações)</span>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-4 w-4 rounded-full"
-                            onClick={() => handleRemoveFile(file.name, index)}
-                          >
-                            <X className="h-3 w-3" />
-                          </Button>
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                
-                {hasTransactions ? (
-                  <>
-                    <DateRangeFilter onDateRangeChange={handleDateRangeChange} />
-                    <Dashboard transactions={filteredTransactions} />
-                  </>
-                ) : (
-                  <div className="text-center py-12 px-4 rounded-lg border-2 border-dashed" style={{borderColor: nubankColors.primaryLight}}>
-                    <h3 className="text-lg font-medium mb-2" style={{color: nubankColors.primary}}>Nenhuma transação importada</h3>
-                    <p className="mb-4 text-sm" style={{color: nubankColors.textTertiary}}>Comece importando suas faturas do cartão de crédito</p>
-                    <Link href="/import">
-                      <Button style={{ backgroundColor: nubankColors.primary, color: 'white' }}>
-                        <Upload className="h-4 w-4 mr-2" />
-                        Importar Faturas
-                      </Button>
-                    </Link>
-                  </div>
-                )}
-                
-                {/* Diálogo de confirmação para limpar dados */}
-                <AlertDialog open={showClearDataDialog} onOpenChange={setShowClearDataDialog}>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Esta ação irá remover permanentemente todos os seus dados financeiros.
-                        Os dados não poderão ser recuperados depois.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                      <AlertDialogAction onClick={handleClearAllData} className="bg-destructive">
-                        Sim, limpar tudo
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </div>
+              <HomePage />
             </Route>
+            
+            <Route path="/dashboard">
+              <DashboardPage />
+            </Route>
+            
             <Route path="/import">
-              <ImportPage />
+              <ImportPage 
+                onFileUpload={handleFileUpload}
+                isLoading={isLoading}
+                error={error}
+              />
             </Route>
+            
             <Route path="/categories">
-              <CategoriesPage />
+              <CategoriesPage 
+                onCategoryUpdated={handleCategoryUpdated}
+              />
             </Route>
+            
             <Route>
               <NotFound />
             </Route>
@@ -360,6 +266,26 @@ function App() {
       </main>
       <Footer />
       <Toaster />
+      
+      {/* Alert Dialog para confirmar exclusão de dados */}
+      <AlertDialog open={showClearDataDialog} onOpenChange={setShowClearDataDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação irá remover permanentemente todas as suas transações importadas
+              e dados associados. Essa ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleClearAllData}
+              style={{ backgroundColor: nubankColors.error, color: 'white' }}>
+              Sim, limpar dados
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

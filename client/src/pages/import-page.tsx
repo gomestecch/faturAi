@@ -6,22 +6,108 @@ import { Transaction } from "@/types";
 import { ArrowLeft } from "lucide-react";
 import { saveTransactions } from "@/lib/storage";
 import { nubankColors } from "@/lib/nubank-theme";
+import { useToast } from "@/hooks/use-toast";
+import { Card, CardContent } from "@/components/ui/card";
+import { SaveIcon, ArrowRightIcon } from "lucide-react";
+import { detectCategory } from "@/lib/categories";
 
-export default function ImportPage() {
-  const [isLoading, setIsLoading] = useState(false);
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [error, setError] = useState<string | null>(null);
+interface ImportPageProps {
+  onFileUpload?: (transactions: Transaction[], fileName: string, error?: string) => void;
+  isLoading?: boolean;
+  error?: string | null;
+}
+
+export default function ImportPage({ 
+  onFileUpload,
+  isLoading: propIsLoading,
+  error: propError 
+}: ImportPageProps) {
+  const { toast } = useToast();
+  const [localIsLoading, setLocalIsLoading] = useState(false);
+  const [localError, setLocalError] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
+  const [importedTransactions, setImportedTransactions] = useState<Transaction[]>([]);
+  const [saved, setSaved] = useState(false);
 
-  const handleUpload = (newTransactions: Transaction[], fileName: string, error?: string) => {
-    setTransactions(newTransactions);
-    setFileName(fileName);
-    if (error) {
-      setError(error);
-    } else {
-      setError(null);
-      // Salvar transações no armazenamento local
-      saveTransactions(newTransactions);
+  // Usar o loading e error das props se fornecidos, caso contrário, usar os do estado local
+  const isLoading = propIsLoading !== undefined ? propIsLoading : localIsLoading;
+  const error = propError !== undefined ? propError : localError;
+
+  const handleFileUpload = async (
+    newTransactions: Transaction[], 
+    name: string, 
+    uploadError?: string
+  ) => {
+    if (uploadError) {
+      setLocalError(uploadError);
+      return;
+    }
+
+    // Atualizar categorias
+    const enhancedTransactions = newTransactions.map(transaction => ({
+      ...transaction,
+      category: transaction.category || detectCategory(transaction.description)
+    }));
+    
+    setFileName(name);
+    setImportedTransactions(enhancedTransactions);
+    setLocalError(null);
+    setSaved(false);
+    
+    toast({
+      title: "Arquivo processado com sucesso",
+      description: `${enhancedTransactions.length} transações de "${name}" foram processadas. Clique em "Salvar no Banco de Dados" para armazená-las.`,
+    });
+    
+    // Se onFileUpload foi fornecido como prop, chamar também
+    if (onFileUpload) {
+      onFileUpload(enhancedTransactions, name);
+    }
+  };
+  
+  const handleSaveToDatabase = async () => {
+    if (importedTransactions.length === 0) {
+      toast({
+        title: "Erro",
+        description: "Nenhuma transação para salvar. Importe um arquivo primeiro.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setLocalIsLoading(true);
+    
+    try {
+      const response = await fetch('/api/transactions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(importedTransactions),
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Erro ao salvar transações: ${response.status}`);
+      }
+      
+      setSaved(true);
+      
+      toast({
+        title: "Transações salvas",
+        description: `${importedTransactions.length} transações foram salvas no banco de dados.`,
+      });
+    } catch (err) {
+      console.error("Erro ao salvar transações:", err);
+      setLocalError("Não foi possível salvar as transações. Tente novamente mais tarde.");
+      
+      toast({
+        title: "Erro",
+        description: "Não foi possível salvar as transações no banco de dados.",
+        variant: "destructive"
+      });
+    } finally {
+      setLocalIsLoading(false);
     }
   };
 
@@ -47,28 +133,58 @@ export default function ImportPage() {
             </p>
             
             <FileUpload
-              onUpload={handleUpload}
+              onUpload={handleFileUpload}
               isLoading={isLoading}
-              setIsLoading={setIsLoading}
+              setIsLoading={setLocalIsLoading}
               error={error}
               fileName={fileName}
-              transactionCount={transactions.length}
+              transactionCount={importedTransactions.length}
               allowMultiple={true}
             />
             
-            {transactions.length > 0 && !error && (
-              <div className="mt-6 text-center">
-                <p className="font-medium mb-4" style={{ color: nubankColors.success }}>
-                  {transactions.length} transações importadas com sucesso!
-                </p>
-                <div className="flex justify-center gap-4 mt-4">
-                  <Link href="/">
-                    <Button style={{ backgroundColor: nubankColors.primary, color: 'white' }}>
-                      Ver Dashboard
-                    </Button>
-                  </Link>
-                </div>
-              </div>
+            {importedTransactions.length > 0 && !error && (
+              <Card className="mt-6 border-border/40 shadow-sm">
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h3 className="text-lg font-semibold" style={{ color: nubankColors.primary }}>
+                        {importedTransactions.length} transações processadas
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        Arquivo: {fileName}
+                      </p>
+                    </div>
+                    
+                    <div className="flex gap-3">
+                      {!saved ? (
+                        <Button 
+                          onClick={handleSaveToDatabase} 
+                          disabled={isLoading || saved}
+                          style={{ backgroundColor: nubankColors.primary, color: 'white' }}
+                        >
+                          <SaveIcon className="h-4 w-4 mr-2" />
+                          Salvar no Banco de Dados
+                        </Button>
+                      ) : (
+                        <Link href="/dashboard">
+                          <Button style={{ backgroundColor: nubankColors.secondary, color: 'white' }}>
+                            Ver no Dashboard
+                            <ArrowRightIcon className="h-4 w-4 ml-2" />
+                          </Button>
+                        </Link>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {saved && (
+                    <div className="p-3 rounded-md" style={{ backgroundColor: nubankColors.success + '20' }}>
+                      <p className="text-sm" style={{ color: nubankColors.success }}>
+                        Transações salvas com sucesso! Agora você pode visualizá-las no Dashboard.
+                      </p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             )}
           </div>
           
