@@ -14,7 +14,7 @@ const DATE_PATTERNS = [
 
 const DESCRIPTION_PATTERNS = [
   'descrição', 'descricao', 'estabelecimento', 'histórico', 'historico', 'lançamento',
-  'description', 'merchant', 'establishment', 'desc'
+  'description', 'merchant', 'establishment', 'desc', 'title' // Adding 'title' for Nubank
 ];
 
 const AMOUNT_PATTERNS = [
@@ -78,22 +78,27 @@ function parseDate(dateString: string): Date {
 function parseAmount(amountString: string): number {
   if (!amountString) return 0;
   
+  // Check if it's already a negative number (like in Nubank exports)
+  const hasNegativeSign = amountString.trim().startsWith('-');
+  
   // Remove currency symbols, spaces and convert commas to periods for decimal
   let cleanAmount = amountString
     .replace(/[^\d,-\.]/g, '') // Remove all non-numeric chars except , - .
     .replace(',', '.'); // Convert comma to period for decimal
   
-  // Handle negative amounts (may be in parentheses or with minus sign)
-  const isNegative = amountString.includes('-') || 
-                     amountString.includes('(') || 
-                     /negativo|negative/i.test(amountString);
-  
   // Parse to float
   let amount = parseFloat(cleanAmount);
   if (isNaN(amount)) return 0;
   
-  // Ensure positive value (will be shown as expense anyway)
-  return Math.abs(amount);
+  // Determine if this is a payment (negative amount) or expense (positive amount)
+  // In Nubank, payments show as negative numbers, expenses as positive
+  if (hasNegativeSign) {
+    // This is a payment or credit, keep it negative for proper categorization
+    return -Math.abs(amount);
+  } else {
+    // This is a debit or expense, keep it positive
+    return Math.abs(amount);
+  }
 }
 
 // Main CSV parsing function
