@@ -29,8 +29,9 @@ import {
   PaginationNext, 
   PaginationPrevious 
 } from "@/components/ui/pagination";
-import { Search } from "lucide-react";
+import { Search, SlidersHorizontal, ArrowUpDown } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { defaultCategories, getCategoryColor } from "@/lib/categories";
 import { Transaction } from "@/types";
 
 interface TransactionListProps {
@@ -176,15 +177,25 @@ export default function TransactionList({ transactions, onCategoryUpdate }: Tran
     }
   }
   
-  // Badge variants based on category
-  const getBadgeVariant = (category: string) => {
-    switch (category) {
-      case "Alimentação": return "primary";
-      case "Transporte": return "secondary";
-      case "Lazer": return "accent";
-      case "Saúde": return "success";
-      default: return "outline";
-    }
+  // Function to get category name from ID
+  const getCategoryName = (categoryId: string): string => {
+    const category = defaultCategories.find(cat => cat.id === categoryId);
+    return category ? category.name : categoryId;
+  };
+  
+  // Function to format categories for select dropdown
+  const formatCategoryOptions = () => {
+    return defaultCategories.map(category => (
+      <SelectItem key={category.id} value={category.id}>
+        <div className="flex items-center gap-2">
+          <div 
+            className="w-2 h-2 rounded-full"
+            style={{ backgroundColor: category.color }}
+          />
+          <span>{category.name}</span>
+        </div>
+      </SelectItem>
+    ));
   };
   
   return (
@@ -263,7 +274,7 @@ export default function TransactionList({ transactions, onCategoryUpdate }: Tran
                     <TableCell>
                       {onCategoryUpdate ? (
                         <Select 
-                          value={transaction.category || "Outros"} 
+                          value={transaction.category || "outros"} 
                           onValueChange={(value) => {
                             if (onCategoryUpdate) {
                               onCategoryUpdate(transaction.description, value);
@@ -272,34 +283,33 @@ export default function TransactionList({ transactions, onCategoryUpdate }: Tran
                         >
                           <SelectTrigger className="w-[180px] h-8">
                             <SelectValue>
-                              <span className={`px-2 py-0.5 rounded-md text-xs font-medium ${
-                                getBadgeVariant(transaction.category || "") === "primary" ? "bg-primary/10 text-primary" :
-                                getBadgeVariant(transaction.category || "") === "secondary" ? "bg-secondary/10 text-secondary" :
-                                getBadgeVariant(transaction.category || "") === "accent" ? "bg-accent/10 text-accent" : 
-                                getBadgeVariant(transaction.category || "") === "success" ? "bg-success/10 text-success" :
-                                "bg-neutral-400/10 text-neutral-500 dark:text-neutral-400"
-                              }`}>
-                                {transaction.category || "Outros"}
-                              </span>
+                              <div className="flex items-center gap-2">
+                                <div 
+                                  className="w-2 h-2 rounded-full"
+                                  style={{ 
+                                    backgroundColor: getCategoryColor(transaction.category || "outros") 
+                                  }}
+                                />
+                                <span>{getCategoryName(transaction.category || "outros")}</span>
+                              </div>
                             </SelectValue>
                           </SelectTrigger>
                           <SelectContent>
                             <SelectGroup>
-                              <SelectItem value="Alimentação">Alimentação</SelectItem>
-                              <SelectItem value="Transporte">Transporte</SelectItem>
-                              <SelectItem value="Lazer">Lazer</SelectItem>
-                              <SelectItem value="Saúde">Saúde</SelectItem>
-                              <SelectItem value="Assinaturas e Serviços">Assinaturas e Serviços</SelectItem>
-                              <SelectItem value="Produtos para Pets">Produtos para Pets</SelectItem>
-                              <SelectItem value="Vestuário">Vestuário</SelectItem>
-                              <SelectItem value="Pagamentos">Pagamentos</SelectItem>
-                              <SelectItem value="Outros">Outros</SelectItem>
+                              {formatCategoryOptions()}
                             </SelectGroup>
                           </SelectContent>
                         </Select>
                       ) : (
-                        <Badge variant={getBadgeVariant(transaction.category || "")}>
-                          {transaction.category || "Outros"}
+                        <Badge 
+                          variant="outline" 
+                          style={{ 
+                            backgroundColor: `${getCategoryColor(transaction.category || "outros")}15`,
+                            color: getCategoryColor(transaction.category || "outros"),
+                            borderColor: `${getCategoryColor(transaction.category || "outros")}30` 
+                          }}
+                        >
+                          {getCategoryName(transaction.category || "outros")}
                         </Badge>
                       )}
                     </TableCell>
