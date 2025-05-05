@@ -261,9 +261,47 @@ export default function TransactionList({ transactions, onCategoryUpdate }: Tran
                     </TableCell>
                     <TableCell>{transaction.description}</TableCell>
                     <TableCell>
-                      <Badge variant={getBadgeVariant(transaction.category || "")}>
-                        {transaction.category || "Outros"}
-                      </Badge>
+                      {onCategoryUpdate ? (
+                        <Select 
+                          value={transaction.category || "Outros"} 
+                          onValueChange={(value) => {
+                            if (onCategoryUpdate) {
+                              onCategoryUpdate(transaction.description, value);
+                            }
+                          }}
+                        >
+                          <SelectTrigger className="w-[180px] h-8">
+                            <SelectValue>
+                              <span className={`px-2 py-0.5 rounded-md text-xs font-medium ${
+                                getBadgeVariant(transaction.category || "") === "primary" ? "bg-primary/10 text-primary" :
+                                getBadgeVariant(transaction.category || "") === "secondary" ? "bg-secondary/10 text-secondary" :
+                                getBadgeVariant(transaction.category || "") === "accent" ? "bg-accent/10 text-accent" : 
+                                getBadgeVariant(transaction.category || "") === "success" ? "bg-success/10 text-success" :
+                                "bg-neutral-400/10 text-neutral-500 dark:text-neutral-400"
+                              }`}>
+                                {transaction.category || "Outros"}
+                              </span>
+                            </SelectValue>
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectGroup>
+                              <SelectItem value="Alimentação">Alimentação</SelectItem>
+                              <SelectItem value="Transporte">Transporte</SelectItem>
+                              <SelectItem value="Lazer">Lazer</SelectItem>
+                              <SelectItem value="Saúde">Saúde</SelectItem>
+                              <SelectItem value="Assinaturas e Serviços">Assinaturas e Serviços</SelectItem>
+                              <SelectItem value="Produtos para Pets">Produtos para Pets</SelectItem>
+                              <SelectItem value="Vestuário">Vestuário</SelectItem>
+                              <SelectItem value="Pagamentos">Pagamentos</SelectItem>
+                              <SelectItem value="Outros">Outros</SelectItem>
+                            </SelectGroup>
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <Badge variant={getBadgeVariant(transaction.category || "")}>
+                          {transaction.category || "Outros"}
+                        </Badge>
+                      )}
                     </TableCell>
                     <TableCell className="text-right font-mono font-medium text-destructive">
                       {formatCurrency(transaction.amount)}

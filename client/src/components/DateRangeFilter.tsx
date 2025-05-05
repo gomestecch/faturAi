@@ -1,185 +1,204 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { format, addMonths, startOfMonth, endOfMonth, isAfter, isBefore, isEqual } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { Calendar as CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import {
   Popover,
   PopoverContent,
-  PopoverTrigger
+  PopoverTrigger,
 } from "@/components/ui/popover";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
-import { CalendarIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface DateRangeFilterProps {
   onDateRangeChange: (startDate: Date, endDate: Date) => void;
 }
 
 export default function DateRangeFilter({ onDateRangeChange }: DateRangeFilterProps) {
-  const [startDate, setStartDate] = useState<Date | undefined>(undefined);
-  const [endDate, setEndDate] = useState<Date | undefined>(undefined);
-  const [selectedFilter, setSelectedFilter] = useState<string>("todos");
-
-  // Calculate date range based on filter selection
-  useEffect(() => {
-    const today = new Date();
-    let start = new Date();
-    let end = new Date();
-
-    switch (selectedFilter) {
-      case "7dias":
-        start.setDate(today.getDate() - 7);
+  const today = new Date();
+  const firstDayCurrentMonth = startOfMonth(today);
+  const lastDayCurrentMonth = endOfMonth(today);
+  
+  const [startDate, setStartDate] = useState<Date | undefined>(firstDayCurrentMonth);
+  const [endDate, setEndDate] = useState<Date | undefined>(lastDayCurrentMonth);
+  const [isStartOpen, setIsStartOpen] = useState(false);
+  const [isEndOpen, setIsEndOpen] = useState(false);
+  
+  // Handler for first calendar selection
+  const handleStartSelect = (date: Date | undefined) => {
+    setStartDate(date);
+    
+    // If end date is not selected or before start date, set it to start date
+    if (!endDate || (date && isBefore(endDate, date))) {
+      setEndDate(date);
+    }
+    
+    // If both dates are selected, dispatch change
+    if (date && endDate) {
+      onDateRangeChange(date, endDate);
+    }
+    
+    // Close start calendar and open end calendar
+    setIsStartOpen(false);
+    setIsEndOpen(true);
+  };
+  
+  // Handler for second calendar selection
+  const handleEndSelect = (date: Date | undefined) => {
+    setEndDate(date);
+    
+    // If start date is not selected or after end date, set it to end date
+    if (!startDate || (date && isAfter(startDate, date))) {
+      setStartDate(date);
+    }
+    
+    // If both dates are selected, dispatch change
+    if (startDate && date) {
+      onDateRangeChange(startDate, date);
+    }
+    
+    setIsEndOpen(false);
+  };
+  
+  // Quick select options
+  const handleQuickSelect = (option: string) => {
+    let newStartDate: Date;
+    let newEndDate: Date = today;
+    
+    switch (option) {
+      case "this-month":
+        newStartDate = firstDayCurrentMonth;
+        newEndDate = lastDayCurrentMonth;
         break;
-      case "30dias":
-        start.setDate(today.getDate() - 30);
+      case "last-month":
+        const lastMonth = addMonths(today, -1);
+        newStartDate = startOfMonth(lastMonth);
+        newEndDate = endOfMonth(lastMonth);
         break;
-      case "90dias":
-        start.setDate(today.getDate() - 90);
+      case "last-3-months":
+        newStartDate = startOfMonth(addMonths(today, -3));
+        newEndDate = lastDayCurrentMonth;
         break;
-      case "6meses":
-        start.setMonth(today.getMonth() - 6);
+      case "last-6-months":
+        newStartDate = startOfMonth(addMonths(today, -6));
+        newEndDate = lastDayCurrentMonth;
         break;
-      case "1ano":
-        start.setFullYear(today.getFullYear() - 1);
+      case "year-to-date":
+        newStartDate = new Date(today.getFullYear(), 0, 1);
+        newEndDate = today;
         break;
-      case "custom":
-        // Use already set custom dates
-        if (startDate && endDate) {
-          onDateRangeChange(startDate, endDate);
-          return;
-        }
+      case "last-year":
+        newStartDate = new Date(today.getFullYear() - 1, 0, 1);
+        newEndDate = new Date(today.getFullYear() - 1, 11, 31);
         break;
       default:
-        // "todos" - use minimum and maximum dates
-        start = new Date(2000, 0, 1); // Arbitrary old date
-        end = new Date(2099, 11, 31); // Arbitrary future date
+        return;
     }
-
-    // If not custom, update the date fields
-    if (selectedFilter !== "custom") {
-      setStartDate(start);
-      setEndDate(end);
-      onDateRangeChange(start, end);
-    }
-  }, [selectedFilter, startDate, endDate, onDateRangeChange]);
-
-  const handleCustomDateChange = (type: "start" | "end", date: Date | undefined) => {
-    if (date) {
-      if (type === "start") {
-        setStartDate(date);
-        // If end date is before start date, reset it
-        if (endDate && date > endDate) {
-          setEndDate(date);
-        }
-      } else {
-        setEndDate(date);
-        // If start date is after end date, reset it
-        if (startDate && date < startDate) {
-          setStartDate(date);
-        }
-      }
-
-      // If both dates are selected, apply filter
-      if ((type === "start" && endDate) || (type === "end" && startDate)) {
-        onDateRangeChange(startDate || new Date(), endDate || new Date());
-      }
-    }
+    
+    setStartDate(newStartDate);
+    setEndDate(newEndDate);
+    onDateRangeChange(newStartDate, newEndDate);
   };
-
+  
   return (
-    <div className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-2 mb-6">
-      <div className="flex space-x-2 overflow-x-auto pb-2 md:pb-0">
-        <Button
-          variant={selectedFilter === "todos" ? "default" : "outline"}
-          size="sm"
-          onClick={() => setSelectedFilter("todos")}
+    <div className="flex flex-col md:flex-row gap-2 mb-4">
+      <div className="flex gap-2 items-center">
+        <Popover open={isStartOpen} onOpenChange={setIsStartOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              className={cn(
+                "justify-start text-left font-normal max-w-[200px]",
+                !startDate && "text-muted-foreground"
+              )}
+            >
+              <CalendarIcon className="mr-2 h-4 w-4" />
+              {startDate ? format(startDate, "dd/MM/yyyy") : "Selecione a data inicial"}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <Calendar
+              mode="single"
+              selected={startDate}
+              onSelect={handleStartSelect}
+              initialFocus
+              locale={ptBR}
+            />
+          </PopoverContent>
+        </Popover>
+        
+        <span className="text-muted-foreground">até</span>
+        
+        <Popover open={isEndOpen} onOpenChange={setIsEndOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              className={cn(
+                "justify-start text-left font-normal max-w-[200px]",
+                !endDate && "text-muted-foreground"
+              )}
+            >
+              <CalendarIcon className="mr-2 h-4 w-4" />
+              {endDate ? format(endDate, "dd/MM/yyyy") : "Selecione a data final"}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <Calendar
+              mode="single"
+              selected={endDate}
+              onSelect={handleEndSelect}
+              initialFocus
+              fromDate={startDate}
+              locale={ptBR}
+            />
+          </PopoverContent>
+        </Popover>
+      </div>
+      
+      <div className="flex flex-wrap gap-2 mt-2 md:mt-0">
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={() => handleQuickSelect("this-month")}
+          className={cn(
+            startDate && endDate && 
+            isEqual(startDate, firstDayCurrentMonth) && 
+            isEqual(endDate, lastDayCurrentMonth) ? 
+            "bg-primary/10 border-primary/50" : ""
+          )}
         >
-          Todos
+          Este mês
         </Button>
-        <Button
-          variant={selectedFilter === "7dias" ? "default" : "outline"}
-          size="sm"
-          onClick={() => setSelectedFilter("7dias")}
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={() => handleQuickSelect("last-month")}
         >
-          7 dias
+          Mês anterior
         </Button>
-        <Button
-          variant={selectedFilter === "30dias" ? "default" : "outline"}
-          size="sm"
-          onClick={() => setSelectedFilter("30dias")}
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={() => handleQuickSelect("last-3-months")}
         >
-          30 dias
+          Últimos 3 meses
         </Button>
-        <Button
-          variant={selectedFilter === "90dias" ? "default" : "outline"}
-          size="sm"
-          onClick={() => setSelectedFilter("90dias")}
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={() => handleQuickSelect("last-6-months")}
         >
-          90 dias
+          Últimos 6 meses
         </Button>
-        <Button
-          variant={selectedFilter === "6meses" ? "default" : "outline"}
-          size="sm"
-          onClick={() => setSelectedFilter("6meses")}
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={() => handleQuickSelect("year-to-date")}
         >
-          6 meses
-        </Button>
-        <Button
-          variant={selectedFilter === "1ano" ? "default" : "outline"}
-          size="sm"
-          onClick={() => setSelectedFilter("1ano")}
-        >
-          1 ano
-        </Button>
-        <Button
-          variant={selectedFilter === "custom" ? "default" : "outline"}
-          size="sm"
-          onClick={() => setSelectedFilter("custom")}
-        >
-          Personalizado
+          Ano atual
         </Button>
       </div>
-
-      {selectedFilter === "custom" && (
-        <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className="flex items-center justify-start">
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {startDate ? format(startDate, "P", { locale: ptBR }) : "Data inicial"}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0">
-              <Calendar
-                mode="single"
-                locale={ptBR}
-                selected={startDate}
-                onSelect={(date) => handleCustomDateChange("start", date)}
-                disabled={(date) => date > new Date()}
-                initialFocus
-              />
-            </PopoverContent>
-          </Popover>
-
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className="flex items-center justify-start">
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {endDate ? format(endDate, "P", { locale: ptBR }) : "Data final"}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0">
-              <Calendar
-                mode="single"
-                locale={ptBR}
-                selected={endDate}
-                onSelect={(date) => handleCustomDateChange("end", date)}
-                disabled={(date) => date > new Date() || (startDate ? date < startDate : false)}
-                initialFocus
-              />
-            </PopoverContent>
-          </Popover>
-        </div>
-      )}
     </div>
   );
 }

@@ -1,5 +1,5 @@
+import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import SummaryCard from "@/components/SummaryCard";
 import SpendingTrend from "@/components/SpendingTrend";
 import { Transaction } from "@/types";
@@ -10,8 +10,6 @@ interface SummaryProps {
   transactionCount: number;
   averageTransaction: number;
   maxTransaction: Transaction | null;
-  timeFrame: "7D" | "30D" | "90D" | "12M";
-  setTimeFrame: (timeFrame: "7D" | "30D" | "90D" | "12M") => void;
   transactions: Transaction[];
 }
 
@@ -20,30 +18,49 @@ export default function Summary({
   transactionCount,
   averageTransaction,
   maxTransaction,
-  timeFrame,
-  setTimeFrame,
   transactions
 }: SummaryProps) {
+  const [timeFrame, setTimeFrame] = useState<"7D" | "30D" | "90D" | "12M">("30D");
+  
   // In a real app, we would calculate actual trends based on previous data
   // Here we'll use random trends for demonstration
   const spendingTrend = getRandomTrend();
   const transactionTrend = getRandomTrend();
   const averageTrend = getRandomTrend();
 
+  // Calculate incoming and outgoing totals
+  const incomingTotal = transactions
+    .filter(t => t.amount < 0) // Negative amounts represent incoming money
+    .reduce((sum, t) => sum + Math.abs(t.amount), 0);
+    
+  const outgoingTotal = transactions
+    .filter(t => t.amount > 0) // Positive amounts represent outgoing money
+    .reduce((sum, t) => sum + t.amount, 0);
+
   return (
     <Card className="mb-6">
       <CardContent className="pt-6">
-        <h2 className="text-lg font-medium text-foreground mb-4">Resumo Financeiro</h2>
+        <h2 className="text-2xl font-bold text-foreground mb-6">Resumo Financeiro</h2>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           {/* Total Spending */}
           <SummaryCard 
             title="Total de Gastos" 
-            value={totalSpending} 
+            value={outgoingTotal} 
             valueType="currency"
             trend={spendingTrend.value}
-            trendIsPositive={spendingTrend.isPositive}
-            trendLabel="vs. mês anterior"
+            trendIsPositive={!spendingTrend.isPositive} // Lower spending is good
+            trendLabel="vs. período anterior"
+          />
+          
+          {/* Total Income */}
+          <SummaryCard 
+            title="Total Recebido" 
+            value={incomingTotal} 
+            valueType="currency"
+            trend={spendingTrend.value}
+            trendIsPositive={spendingTrend.isPositive} // Higher income is good
+            trendLabel="vs. período anterior"
           />
           
           {/* Transaction Count */}
@@ -53,17 +70,7 @@ export default function Summary({
             valueType="number"
             trend={transactionTrend.value}
             trendIsPositive={transactionTrend.isPositive}
-            trendLabel="vs. mês anterior"
-          />
-          
-          {/* Average Transaction */}
-          <SummaryCard 
-            title="Valor Médio" 
-            value={averageTransaction} 
-            valueType="currency"
-            trend={averageTrend.value}
-            trendIsPositive={!averageTrend.isPositive} // Lower average is good
-            trendLabel="vs. mês anterior"
+            trendLabel="vs. período anterior"
           />
           
           {/* Max Transaction */}
@@ -77,40 +84,6 @@ export default function Summary({
         
         {/* Spending Trend Chart */}
         <div>
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-md font-medium text-foreground">Gastos por Período</h3>
-            <div className="flex space-x-2">
-              <Button 
-                size="sm" 
-                variant={timeFrame === "7D" ? "default" : "outline"} 
-                onClick={() => setTimeFrame("7D")}
-              >
-                7D
-              </Button>
-              <Button 
-                size="sm" 
-                variant={timeFrame === "30D" ? "default" : "outline"} 
-                onClick={() => setTimeFrame("30D")}
-              >
-                30D
-              </Button>
-              <Button 
-                size="sm" 
-                variant={timeFrame === "90D" ? "default" : "outline"} 
-                onClick={() => setTimeFrame("90D")}
-              >
-                90D
-              </Button>
-              <Button 
-                size="sm" 
-                variant={timeFrame === "12M" ? "default" : "outline"} 
-                onClick={() => setTimeFrame("12M")}
-              >
-                12M
-              </Button>
-            </div>
-          </div>
-          
           <SpendingTrend 
             transactions={transactions} 
             timeFrame={timeFrame} 
