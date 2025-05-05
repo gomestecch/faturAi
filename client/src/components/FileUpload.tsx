@@ -1,7 +1,7 @@
 import { useRef, useState, DragEvent, ChangeEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Upload, CheckCircle, AlertCircle } from "lucide-react";
+import { Upload, CheckCircle, AlertCircle, FilePlus } from "lucide-react";
 import { parseCsvFile } from "@/lib/csv-parser";
 import { Transaction } from "@/types";
 
@@ -12,6 +12,7 @@ interface FileUploadProps {
   error: string | null;
   fileName: string | null;
   transactionCount: number;
+  allowMultiple?: boolean;
 }
 
 export default function FileUpload({
@@ -20,15 +21,16 @@ export default function FileUpload({
   setIsLoading,
   error,
   fileName,
-  transactionCount
+  transactionCount,
+  allowMultiple = false
 }: FileUploadProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragActive, setIsDragActive] = useState(false);
+  const [processingFiles, setProcessingFiles] = useState(0);
+  const [processedFiles, setProcessedFiles] = useState(0);
 
   const handleFileUpload = async (file: File) => {
     if (!file) return;
-    
-    setIsLoading(true);
     
     try {
       if (file.type !== 'text/csv' && !file.name.endsWith('.csv')) {
@@ -37,10 +39,29 @@ export default function FileUpload({
       
       const transactions = await parseCsvFile(file);
       onUpload(transactions, file.name);
+      setProcessedFiles(prev => prev + 1);
     } catch (err) {
       onUpload([], file.name, (err as Error).message);
+      setProcessedFiles(prev => prev + 1);
+    }
+  };
+
+  const handleFilesUpload = async (files: FileList) => {
+    if (!files || files.length === 0) return;
+    
+    setIsLoading(true);
+    setProcessingFiles(files.length);
+    setProcessedFiles(0);
+    
+    try {
+      // Process files one by one to avoid overwhelming the browser
+      for (let i = 0; i < files.length; i++) {
+        await handleFileUpload(files[i]);
+      }
     } finally {
       setIsLoading(false);
+      setProcessingFiles(0);
+      setProcessedFiles(0);
     }
   };
 
@@ -50,13 +71,13 @@ export default function FileUpload({
     setIsDragActive(false);
     
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      handleFileUpload(e.dataTransfer.files[0]);
+      handleFilesUpload(e.dataTransfer.files);
     }
   };
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      handleFileUpload(e.target.files[0]);
+      handleFilesUpload(e.target.files);
     }
   };
 
@@ -72,9 +93,9 @@ export default function FileUpload({
   return (
     <Card className="mb-6">
       <CardContent className="pt-6">
-        <h2 className="text-lg font-medium text-foreground mb-4">Upload de Arquivo CSV</h2>
-        <p className="text-muted-foreground mb-4">
-          Carregue sua fatura de cartão de crédito em formato CSV para análise. Seus dados são processados
+        <h2 className="text-2xl font-bold text-foreground mb-4">Importe suas faturas</h2>
+        <p className="text-muted-foreground mb-6">
+          Carregue suas faturas de cartão de crédito em formato CSV para análise. Seus dados são processados
           localmente e não são enviados para servidores.
         </p>
         
@@ -86,10 +107,15 @@ export default function FileUpload({
           onDrop={handleDrop}
           onClick={handleClick}
         >
-          <Upload className="mx-auto h-10 w-10 text-primary mb-2" />
-          <p className="mb-2 font-medium">Arraste seu arquivo CSV ou</p>
-          <Button variant="default" className="bg-primary hover:bg-primary/90">
-            Selecionar Arquivo
+          <Upload className="mx-auto h-12 w-12 text-primary mb-4" />
+          <p className="mb-4 font-medium text-lg">
+            {allowMultiple 
+              ? "Arraste seus arquivos CSV ou selecione múltiplos arquivos" 
+              : "Arraste seu arquivo CSV ou"
+            }
+          </p>
+          <Button variant="default" className="bg-primary hover:bg-primary/90 px-6 py-6 text-lg font-medium h-auto">
+            {allowMultiple ? "Selecionar Arquivos" : "Selecionar Arquivo"}
           </Button>
           <input
             type="file"
@@ -99,26 +125,28 @@ export default function FileUpload({
             accept=".csv"
             className="hidden"
             disabled={isLoading}
+            multiple={allowMultiple}
           />
-          <p className="mt-3 text-sm text-muted-foreground">
-            Suporte para formatos padrão de grandes emissores de cartão
+          <p className="mt-4 text-sm text-muted-foreground">
+            Compatível com arquivos CSV da Nubank, Itaú, Bradesco, Banco do Brasil e outros
           </p>
         </div>
         
-        {/* Success state */}
-        {fileName && !error && (
-          <div className="bg-success/10 border border-success rounded-md p-4 flex items-start mb-4">
-            <CheckCircle className="text-success mr-3 mt-0.5 h-5 w-5" />
+        {/* Processing state */}
+        {isLoading && (
+          <div className="bg-primary/10 border border-primary rounded-md p-4 flex items-start mb-4">
+            <FilePlus className="text-primary mr-3 mt-0.5 h-5 w-5" />
             <div>
-              <h3 className="font-medium text-success">Arquivo carregado com sucesso!</h3>
-              <p className="text-sm text-foreground">{fileName}</p>
-              <p className="text-sm text-foreground">{transactionCount} transações encontradas</p>
+              <h3 className="font-medium text-primary">Processando arquivos...</h3>
+              <p className="text-sm text-foreground">
+                {processedFiles} de {processingFiles} arquivos processados
+              </p>
             </div>
           </div>
         )}
         
         {/* Error state */}
-        {error && (
+        {error && !isLoading && (
           <div className="bg-destructive/10 border border-destructive rounded-md p-4 flex items-start mb-4">
             <AlertCircle className="text-destructive mr-3 mt-0.5 h-5 w-5" />
             <div>

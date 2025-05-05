@@ -35,9 +35,10 @@ import { Transaction } from "@/types";
 
 interface TransactionListProps {
   transactions: Transaction[];
+  onCategoryUpdate?: (description: string, newCategory: string) => void;
 }
 
-export default function TransactionList({ transactions }: TransactionListProps) {
+export default function TransactionList({ transactions, onCategoryUpdate }: TransactionListProps) {
   const [category, setCategory] = useState<string>("all");
   const [sortOrder, setSortOrder] = useState<string>("date_desc");
   const [searchTerm, setSearchTerm] = useState<string>("");
