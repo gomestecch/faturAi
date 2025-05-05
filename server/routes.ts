@@ -1,9 +1,10 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+import { setupAuth } from "./auth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Since all processing happens client-side, we don't need any API routes
-  // for this application. We're just serving the static React application.
+  // Configura a autenticação e rotas relacionadas
+  setupAuth(app);
   
   const httpServer = createServer(app);
   return httpServer;
