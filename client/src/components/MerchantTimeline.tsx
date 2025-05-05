@@ -217,14 +217,15 @@ export default function MerchantTimeline({ transactions }: MerchantTimelineProps
           <DialogHeader>
             <div className="flex items-center gap-2">
               <Button 
-                variant="ghost" 
-                size="icon" 
+                variant="outline" 
+                size="sm" 
                 onClick={() => setSelectedMerchant(null)}
-                className="absolute left-4 top-4"
+                className="absolute left-4 top-4 flex items-center gap-1"
               >
                 <ArrowLeft className="h-4 w-4" />
+                <span>Voltar</span>
               </Button>
-              <DialogTitle className="text-xl ml-6">
+              <DialogTitle className="text-xl ml-20">
                 {selectedMerchant?.name}
               </DialogTitle>
             </div>

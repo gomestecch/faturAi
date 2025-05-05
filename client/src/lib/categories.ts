@@ -11,16 +11,16 @@ export interface CategoryDefinition {
 }
 
 export const categoryColors = {
-  alimentacao: "#FF5722",
-  moradia: "#4CAF50",
-  transporte: "#2196F3",
-  saude: "#E91E63",
-  educacao: "#9C27B0",
-  lazer: "#FF9800",
-  vestuario: "#795548",
-  servicos: "#607D8B",
-  financas: "#673AB7",
-  outros: "#9E9E9E",
+  alimentacao: "#820AD1", // Roxo principal
+  moradia: "#A66DD4",     // Roxo mais claro
+  transporte: "#00B4D8",  // Azul
+  saude: "#06D6A0",       // Verde
+  educacao: "#FF9505",    // Laranja
+  lazer: "#820AD1",       // Roxo principal
+  vestuario: "#A66DD4",   // Roxo mais claro
+  servicos: "#00B4D8",    // Azul
+  financas: "#06D6A0",    // Verde 
+  outros: "#333333",      // Cinza escuro
 };
 
 export const defaultCategories: CategoryDefinition[] = [

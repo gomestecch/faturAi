@@ -57,12 +57,20 @@ function parseAmount(amountString: string): number {
   try {
     // Remove cifrão e pontos de milhar, substitui vírgula por ponto
     const cleanedValue = amountString
-      .replace(/[R$\s]/g, "")
-      .replace(/\./g, "")
-      .replace(",", ".");
+      .replace(/[R$\s]/g, "") // Remove R$ e espaços
+      .replace(/\./g, "")     // Remove pontos de milhar
+      .replace(",", ".");     // Substitui vírgula decimal por ponto
     
-    // Converte para número
-    return parseFloat(cleanedValue);
+    // Converte para número (não multiplicamos por 100 aqui)
+    const amount = parseFloat(cleanedValue);
+    
+    // Verifica se o valor é válido
+    if (isNaN(amount)) {
+      console.warn("Valor não numérico:", amountString);
+      return 0;
+    }
+    
+    return amount;
   } catch (error) {
     console.error("Erro ao parsear valor:", amountString, error);
     return 0;

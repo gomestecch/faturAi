@@ -6,10 +6,18 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function formatCurrency(value: number): string {
-  return value.toLocaleString('pt-BR', {
+  // Garante que temos um número válido
+  if (isNaN(value) || value === null || value === undefined) {
+    return 'R$ 0,00';
+  }
+  
+  // Formata o valor como moeda brasileira (R$)
+  return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
-    currency: 'BRL'
-  });
+    currency: 'BRL',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(value);
 }
 
 export function formatDate(date: Date | string): string {
