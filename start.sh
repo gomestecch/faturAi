@@ -1,12 +1,10 @@
 #!/bin/bash
 
-# Configuração da porta e URL do banco de dados
+# Configuração da porta e segredo da sessão
 PORT=5000
-DATABASE_URL="postgresql://postgres:postgres@localhost:5432/faturai"
 SESSION_SECRET="faturai-app-secret-key"
 
 # Exporta as variáveis de ambiente necessárias
-export DATABASE_URL
 export SESSION_SECRET
 export PORT
 

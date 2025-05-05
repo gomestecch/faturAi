@@ -1,16 +1,30 @@
-import { Pool, neonConfig } from '@neondatabase/serverless';
-import { drizzle } from 'drizzle-orm/neon-serverless';
-import ws from "ws";
+import Database from 'better-sqlite3';
+import { drizzle } from 'drizzle-orm/better-sqlite3';
 import * as schema from "@shared/schema";
+import path from 'path';
+import fs from 'fs';
 
-// This is the correct way neon config - DO NOT change this
-neonConfig.webSocketConstructor = ws;
-
-if (!process.env.DATABASE_URL) {
-  throw new Error(
-    "DATABASE_URL must be set. Did you forget to provision a database?",
-  );
+// Garantir que o diretório data exista
+const dataDir = path.join(process.cwd(), 'data');
+if (!fs.existsSync(dataDir)) {
+  fs.mkdirSync(dataDir, { recursive: true });
 }
 
-export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-export const db = drizzle({ client: pool, schema });
+// Caminho do banco de dados SQLite
+const dbPath = path.join(dataDir, 'faturai.db');
+
+// Inicializar o banco de dados SQLite
+const sqlite = new Database(dbPath);
+
+// Configurar Drizzle com SQLite
+export const db = drizzle(sqlite, { schema });
+
+// Adicionar método run para executar SQL direto
+db.run = (sql: string, params: any[] = []) => {
+  return sqlite.prepare(sql).run(params);
+};
+
+// Exportar uma função para fechar a conexão
+export const closeDb = () => {
+  sqlite.close();
+};

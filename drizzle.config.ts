@@ -1,15 +1,15 @@
 import { defineConfig } from "drizzle-kit";
+import path from "path";
 
-if (!process.env.DATABASE_URL) {
-  throw new Error("DATABASE_URL, ensure the database is provisioned");
-}
+// Caminho do banco de dados SQLite
+const dbPath = path.join(process.cwd(), 'data', 'faturai.db');
 
 export default defineConfig({
   out: "./db/migrations",
   schema: "./shared/schema.ts",
-  dialect: "postgresql",
+  dialect: "sqlite",
   dbCredentials: {
-    url: process.env.DATABASE_URL,
+    url: `file:${dbPath}`,
   },
   verbose: true,
 });

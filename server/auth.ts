@@ -4,12 +4,12 @@ import { Express } from "express";
 import session from "express-session";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
-import { db } from "../db";
+import { db, closeDb } from "../db";
 import { users } from "../shared/schema";
 import { eq } from "drizzle-orm";
-import connectPg from "connect-pg-simple";
-import { pool } from "../db";
 import { InsertUser } from "@shared/schema";
+import SQLiteStoreFactory from "connect-sqlite3";
+import path from "path";
 
 declare global {
   namespace Express {
@@ -36,16 +36,19 @@ async function comparePasswords(supplied: string, stored: string) {
   return timingSafeEqual(hashedBuf, suppliedBuf);
 }
 
-const PostgresSessionStore = connectPg(session);
+// Armazenamento SQLite para sessões
+const SQLiteStore = SQLiteStoreFactory(session);
 
 export function setupAuth(app: Express) {
+  // Configurações da sessão com SQLite
   const sessionSettings: session.SessionOptions = {
     secret: process.env.SESSION_SECRET || "faturai-app-secret-key",
     resave: false,
     saveUninitialized: false,
-    store: new PostgresSessionStore({ 
-      pool, 
-      createTableIfMissing: true 
+    store: new SQLiteStore({
+      db: 'sessions.db',
+      dir: path.join(process.cwd(), 'data'),
+      table: 'sessions'
     }),
     cookie: {
       secure: process.env.NODE_ENV === "production",
