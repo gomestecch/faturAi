@@ -10,150 +10,195 @@ export interface CategoryDefinition {
   keywords: string[];
 }
 
-// Paleta de cores acessível que segue as heurísticas de Nielsen para distinção visual
-// Cores contrastantes que podem ser distinguidas mesmo com daltonismo
 export const categoryColors = {
-  housing: "#8E24AA", // Roxo (Nubank)
-  food: "#43A047", // Verde
-  transportation: "#1E88E5", // Azul
-  entertainment: "#FFB300", // Amarelo
-  shopping: "#D81B60", // Rosa
-  health: "#00897B", // Verde azulado
-  education: "#3949AB", // Azul escuro
-  finance: "#F4511E", // Laranja
-  personal: "#6D4C41", // Marrom
-  utilities: "#5E35B1", // Roxo
-  travel: "#039BE5", // Azul claro
-  other: "#757575", // Cinza
+  alimentacao: "#FF5722",
+  moradia: "#4CAF50",
+  transporte: "#2196F3",
+  saude: "#E91E63",
+  educacao: "#9C27B0",
+  lazer: "#FF9800",
+  vestuario: "#795548",
+  servicos: "#607D8B",
+  financas: "#673AB7",
+  outros: "#9E9E9E",
 };
 
-// Categorias padrão com exemplos e palavras-chave para detecção automática
 export const defaultCategories: CategoryDefinition[] = [
-  {
-    id: "moradia",
-    name: "Moradia",
-    color: categoryColors.housing,
-    description: "Aluguel, condomínio, IPTU, reformas, etc.",
-    keywords: ["aluguel", "condomínio", "iptu", "reforma", "apartamento", "casa", "imóvel", "prestação"]
-  },
   {
     id: "alimentacao",
     name: "Alimentação",
-    color: categoryColors.food,
-    description: "Supermercado, restaurantes, delivery, etc.",
-    keywords: ["restaurante", "ifood", "supermercado", "mercado", "lanchonete", "pizzaria", "delivery", "padaria", "açougue", "hortifruti"]
+    color: categoryColors.alimentacao,
+    description: "Gastos com alimentação, incluindo restaurantes, deliveries e supermercados",
+    keywords: [
+      "restaurante", "ifood", "delivery", "mercado", "supermercado", 
+      "padaria", "lanchonete", "fast food", "hamburger", "burguer", "mc donalds",
+      "pizza", "sushi", "rappi", "uber eats", "açougue", "cafeteria", "café"
+    ]
+  },
+  {
+    id: "moradia",
+    name: "Moradia",
+    color: categoryColors.moradia,
+    description: "Despesas relacionadas à casa como aluguel, condomínio, água, luz e reformas",
+    keywords: [
+      "aluguel", "condomínio", "água", "luz", "energia", "gás", "iptu", 
+      "internet", "reforma", "móveis", "decoração", "manutenção", "limpeza",
+      "eletricidade", "casa", "apartamento", "residência"
+    ]
   },
   {
     id: "transporte",
     name: "Transporte",
-    color: categoryColors.transportation,
-    description: "Combustível, transporte público, aplicativos, manutenção, etc.",
-    keywords: ["uber", "99", "gasolina", "combustível", "estacionamento", "metrô", "ônibus", "táxi", "pedágio", "oficina", "mecânico"]
-  },
-  {
-    id: "lazer",
-    name: "Lazer",
-    color: categoryColors.entertainment,
-    description: "Cinema, shows, streaming, jogos, etc.",
-    keywords: ["cinema", "teatro", "show", "netflix", "spotify", "ingresso", "disney+", "prime", "jogos", "parque", "bar", "balada"]
-  },
-  {
-    id: "compras",
-    name: "Compras",
-    color: categoryColors.shopping,
-    description: "Roupas, calçados, eletrônicos, etc.",
-    keywords: ["lojas", "shopping", "vestuário", "roupa", "calçado", "eletrônico", "celular", "amazon", "magazine", "americanas", "zara", "renner"]
+    color: categoryColors.transporte,
+    description: "Gastos com transporte público, táxi, aplicativos de mobilidade, combustível e manutenção de veículos",
+    keywords: [
+      "uber", "99", "táxi", "taxi", "ônibus", "metrô", "trem", "combustível", 
+      "gasolina", "etanol", "diesel", "estacionamento", "pedágio", "oficina",
+      "manutenção", "seguro", "ipva", "carro", "moto", "bicicleta", "brt", "passagem"
+    ]
   },
   {
     id: "saude",
     name: "Saúde",
-    color: categoryColors.health,
-    description: "Convênio, consultas, medicamentos, etc.",
-    keywords: ["hospital", "médico", "farmácia", "remédio", "drogaria", "consulta", "exame", "dentista", "psicólogo", "terapia", "academia"]
+    color: categoryColors.saude,
+    description: "Gastos com plano de saúde, medicamentos, consultas médicas e dentistas",
+    keywords: [
+      "médico", "consulta", "exame", "plano de saúde", "farmácia", "remédio", 
+      "medicamento", "hospital", "dentista", "psicólogo", "terapia", "fisioterapia",
+      "academia", "suplemento", "proteína", "vitamina", "odontológico"
+    ]
   },
   {
     id: "educacao",
     name: "Educação",
-    color: categoryColors.education,
-    description: "Mensalidade, cursos, livros, etc.",
-    keywords: ["faculdade", "escola", "curso", "livro", "material", "educação", "ensino", "universidade", "diploma", "mensalidade"]
+    color: categoryColors.educacao,
+    description: "Despesas com mensalidades escolares, cursos, livros e material didático",
+    keywords: [
+      "escola", "faculdade", "universidade", "curso", "livro", "material", 
+      "notebook", "computador", "mensalidade", "matrícula", "biblioteca",
+      "udemy", "alura", "idioma", "inglês", "curso online", "educação"
+    ]
+  },
+  {
+    id: "lazer",
+    name: "Lazer",
+    color: categoryColors.lazer,
+    description: "Entretenimento, viagens, passeios, assinaturas de streaming e hobbies",
+    keywords: [
+      "cinema", "teatro", "show", "concerto", "festa", "bar", "balada", 
+      "viagem", "hotel", "passeio", "parque", "praia", "netflix", "spotify",
+      "amazon", "prime", "disney", "hbo", "ingresso", "jogo", "videogame",
+      "hobby", "livro", "música", "ingressos"
+    ]
+  },
+  {
+    id: "vestuario",
+    name: "Vestuário",
+    color: categoryColors.vestuario,
+    description: "Roupas, calçados, acessórios e joias",
+    keywords: [
+      "roupa", "sapato", "tênis", "camisa", "calça", "vestido", "jaqueta", 
+      "moda", "loja", "shopping", "renner", "zara", "c&a", "riachuelo",
+      "joia", "relógio", "acessório", "bolsa", "mala", "cinto"
+    ]
+  },
+  {
+    id: "servicos",
+    name: "Serviços e Assinaturas",
+    color: categoryColors.servicos,
+    description: "Serviços pessoais, assinaturas de software e outras assinaturas regulares",
+    keywords: [
+      "assinatura", "serviço", "barbeiro", "cabeleireiro", "salão", "manicure", 
+      "pedicure", "estética", "maquiagem", "massagem", "spa", "lavanderia",
+      "microsoft", "office", "aplicativo", "anual", "mensal", "recorrente"
+    ]
   },
   {
     id: "financas",
-    name: "Finanças",
-    color: categoryColors.finance,
-    description: "Juros, tarifas, investimentos, etc.",
-    keywords: ["tarifa", "juros", "empréstimo", "financiamento", "seguro", "banco", "imposto", "taxa", "multa", "parcela"]
-  },
-  {
-    id: "pessoal",
-    name: "Cuidados Pessoais",
-    color: categoryColors.personal,
-    description: "Higiene, beleza, etc.",
-    keywords: ["salão", "cabelo", "barbeiro", "manicure", "perfume", "maquiagem", "cosmético", "spa", "estética"]
-  },
-  {
-    id: "utilidades",
-    name: "Utilidades",
-    color: categoryColors.utilities,
-    description: "Água, luz, internet, telefone, etc.",
-    keywords: ["conta de luz", "conta de água", "internet", "telefone", "celular", "gás", "tv", "contas", "energia"]
-  },
-  {
-    id: "viagem",
-    name: "Viagem",
-    color: categoryColors.travel,
-    description: "Passagens, hospedagem, passeios, etc.",
-    keywords: ["passagem", "hotel", "hospedagem", "airbnb", "viagem", "resort", "excursão", "turismo", "pousada"]
-  },
-  {
-    id: "assinaturas",
-    name: "Assinaturas e Serviços",
-    color: "#7B1FA2", // Roxo escuro
-    description: "Assinaturas de serviços recorrentes",
-    keywords: ["assinatura", "mensalidade", "recorrente", "serviço", "clube", "signature"]
-  },
-  {
-    id: "pets",
-    name: "Pets",
-    color: "#D32F2F", // Vermelho
-    description: "Despesas com animais de estimação",
-    keywords: ["pet", "animal", "veterinário", "petshop", "ração", "aquário", "gato", "cachorro"]
+    name: "Finanças e Investimentos",
+    color: categoryColors.financas,
+    description: "Investimentos, empréstimos, financiamentos, juros e taxas bancárias",
+    keywords: [
+      "investimento", "ação", "imposto", "taxa", "juros", "empréstimo", 
+      "financiamento", "banco", "seguro", "previdência", "poupança", "tesouro",
+      "cdb", "lci", "lca", "fundos", "corretora", "tarifas bancárias"
+    ]
   },
   {
     id: "outros",
     name: "Outros",
-    color: categoryColors.other,
-    description: "Gastos que não se encaixam nas categorias anteriores",
-    keywords: []
-  }
+    color: categoryColors.outros,
+    description: "Despesas não classificadas nas demais categorias",
+    keywords: [
+      "diversos", "outros", "presente", "doação", "caridade", "imprevisto", 
+      "emergência", "variados", "miscelânea", "diversos", "avulso", "pagamento"
+    ]
+  },
 ];
 
-// Função para detectar a categoria com base na descrição
+/**
+ * Detecta a categoria de uma descrição de transação
+ */
 export function detectCategory(description: string): string {
   if (!description) return "outros";
   
-  const normalizedDesc = description.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const descLower = description.toLowerCase();
   
+  // Verificar correspondência com palavras-chave nas categorias
   for (const category of defaultCategories) {
     for (const keyword of category.keywords) {
-      if (normalizedDesc.includes(keyword.toLowerCase())) {
+      if (descLower.includes(keyword.toLowerCase())) {
         return category.id;
       }
     }
   }
   
+  // Categorias específicas para alguns tipos comuns de operações
+  if (descLower.includes("supermercado") || 
+      descLower.includes("mercado") || 
+      descLower.includes("aliment")) {
+    return "alimentacao";
+  }
+  
+  if (descLower.includes("uber") || 
+      descLower.includes("99") || 
+      descLower.includes("táxi") || 
+      descLower.includes("taxi")) {
+    return "transporte";
+  }
+  
+  if (descLower.includes("farm") || 
+      descLower.includes("remed") || 
+      descLower.includes("medic") || 
+      descLower.includes("hosp")) {
+    return "saude";
+  }
+  
+  // Categoria padrão se nenhuma correspondência for encontrada
   return "outros";
 }
 
-// Retorna a definição completa de uma categoria pelo ID
+/**
+ * Obtém uma categoria pelo ID
+ */
 export function getCategoryById(categoryId: string): CategoryDefinition {
   const category = defaultCategories.find(cat => cat.id === categoryId);
-  return category || defaultCategories[defaultCategories.length - 1]; // Retorna "Outros" se não encontrar
+  if (!category) {
+    return {
+      id: "outros",
+      name: "Outros",
+      color: categoryColors.outros,
+      description: "Despesas não classificadas nas demais categorias",
+      keywords: []
+    };
+  }
+  return category;
 }
 
-// Obtém a cor de uma categoria pelo ID
+/**
+ * Obtém a cor de uma categoria pelo ID
+ */
 export function getCategoryColor(categoryId: string): string {
-  const category = getCategoryById(categoryId);
-  return category.color;
+  const category = defaultCategories.find(cat => cat.id === categoryId);
+  return category ? category.color : categoryColors.outros;
 }

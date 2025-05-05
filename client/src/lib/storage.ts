@@ -1,10 +1,9 @@
 import { Transaction } from "@/types";
 
-// Chaves para armazenamento no localStorage
 const STORAGE_KEYS = {
-  TRANSACTIONS: 'finance_app_transactions',
-  USER_CATEGORIES: 'finance_app_user_categories',
-  SETTINGS: 'finance_app_settings'
+  TRANSACTIONS: "finance_tracker_transactions",
+  CATEGORIES: "finance_tracker_categories",
+  SETTINGS: "finance_tracker_settings"
 };
 
 /**
@@ -12,9 +11,12 @@ const STORAGE_KEYS = {
  */
 export function saveTransactions(transactions: Transaction[]): void {
   try {
-    localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(transactions));
+    localStorage.setItem(
+      STORAGE_KEYS.TRANSACTIONS, 
+      JSON.stringify(transactions)
+    );
   } catch (error) {
-    console.error('Erro ao salvar transações:', error);
+    console.error("Erro ao salvar transações:", error);
   }
 }
 
@@ -26,15 +28,15 @@ export function loadTransactions(): Transaction[] {
     const storedData = localStorage.getItem(STORAGE_KEYS.TRANSACTIONS);
     if (!storedData) return [];
     
-    const transactions = JSON.parse(storedData);
+    const parsedData = JSON.parse(storedData) as Transaction[];
     
-    // Certifique-se de que as datas são instâncias de Date
-    return transactions.map((t: any) => ({
-      ...t,
-      date: new Date(t.date)
+    // Convertendo as strings de data para objetos Date
+    return parsedData.map(transaction => ({
+      ...transaction,
+      date: new Date(transaction.date)
     }));
   } catch (error) {
-    console.error('Erro ao carregar transações:', error);
+    console.error("Erro ao carregar transações:", error);
     return [];
   }
 }
@@ -44,9 +46,12 @@ export function loadTransactions(): Transaction[] {
  */
 export function saveUserCategories(categories: any[]): void {
   try {
-    localStorage.setItem(STORAGE_KEYS.USER_CATEGORIES, JSON.stringify(categories));
+    localStorage.setItem(
+      STORAGE_KEYS.CATEGORIES, 
+      JSON.stringify(categories)
+    );
   } catch (error) {
-    console.error('Erro ao salvar categorias:', error);
+    console.error("Erro ao salvar categorias:", error);
   }
 }
 
@@ -55,12 +60,12 @@ export function saveUserCategories(categories: any[]): void {
  */
 export function loadUserCategories(): any[] {
   try {
-    const storedData = localStorage.getItem(STORAGE_KEYS.USER_CATEGORIES);
+    const storedData = localStorage.getItem(STORAGE_KEYS.CATEGORIES);
     if (!storedData) return [];
     
     return JSON.parse(storedData);
   } catch (error) {
-    console.error('Erro ao carregar categorias:', error);
+    console.error("Erro ao carregar categorias:", error);
     return [];
   }
 }
@@ -70,9 +75,12 @@ export function loadUserCategories(): any[] {
  */
 export function saveSettings(settings: Record<string, any>): void {
   try {
-    localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
+    localStorage.setItem(
+      STORAGE_KEYS.SETTINGS, 
+      JSON.stringify(settings)
+    );
   } catch (error) {
-    console.error('Erro ao salvar configurações:', error);
+    console.error("Erro ao salvar configurações:", error);
   }
 }
 
@@ -86,7 +94,7 @@ export function loadSettings(): Record<string, any> {
     
     return JSON.parse(storedData);
   } catch (error) {
-    console.error('Erro ao carregar configurações:', error);
+    console.error("Erro ao carregar configurações:", error);
     return {};
   }
 }
@@ -97,10 +105,10 @@ export function loadSettings(): Record<string, any> {
 export function clearAllData(): void {
   try {
     localStorage.removeItem(STORAGE_KEYS.TRANSACTIONS);
-    localStorage.removeItem(STORAGE_KEYS.USER_CATEGORIES);
+    localStorage.removeItem(STORAGE_KEYS.CATEGORIES);
     localStorage.removeItem(STORAGE_KEYS.SETTINGS);
   } catch (error) {
-    console.error('Erro ao limpar dados:', error);
+    console.error("Erro ao limpar dados:", error);
   }
 }
 

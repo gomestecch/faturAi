@@ -1,10 +1,13 @@
 import { useState, useEffect } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { CirclePlus, Trash2, Pencil, Save, Info, Eye, EyeOff } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -14,334 +17,592 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { 
-  defaultCategories, 
-  CategoryDefinition, 
-  categoryColors 
-} from "@/lib/categories";
-import { loadUserCategories, saveUserCategories } from "@/lib/storage";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Tag,
+  Plus,
+  Edit,
+  Trash2,
+  Save,
+  X,
+  ChevronDown,
+  PaintBucket,
+  Tags,
+  Info,
+} from "lucide-react";
+import { defaultCategories, CategoryDefinition, getCategoryColor } from "@/lib/categories";
+import { saveUserCategories, loadUserCategories } from "@/lib/storage";
 
 interface CategoryManagerProps {
   onCategoryChange: () => void;
 }
 
 export default function CategoryManager({ onCategoryChange }: CategoryManagerProps) {
+  const { toast } = useToast();
   const [categories, setCategories] = useState<CategoryDefinition[]>([]);
-  const [userCategories, setUserCategories] = useState<CategoryDefinition[]>([]);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [editingCategory, setEditingCategory] = useState<CategoryDefinition | null>(null);
-  const [newCategoryName, setNewCategoryName] = useState("");
-  const [newCategoryColor, setNewCategoryColor] = useState(categoryColors.other);
-  const [newCategoryDescription, setNewCategoryDescription] = useState("");
-  const [newCategoryKeywords, setNewCategoryKeywords] = useState("");
-  const [showDefaultCategories, setShowDefaultCategories] = useState(true);
+  const [currentCategory, setCurrentCategory] = useState<CategoryDefinition | null>(null);
+  const [formData, setFormData] = useState({
+    id: "",
+    name: "",
+    color: "#808080",
+    description: "",
+    keywords: "",
+  });
 
-  // Carregar categorias do localStorage ao iniciar
+  // Carregar categorias ao montar o componente
   useEffect(() => {
-    const userCats = loadUserCategories();
-    setUserCategories(userCats);
-    setCategories([...defaultCategories, ...userCats]);
-  }, []);
-
-  // Salvar categorias do usuário quando elas mudam
-  useEffect(() => {
-    saveUserCategories(userCategories);
-    setCategories([
-      ...(showDefaultCategories ? defaultCategories : []), 
-      ...userCategories
-    ]);
-    onCategoryChange();
-  }, [userCategories, showDefaultCategories, onCategoryChange]);
-
-  // Adicionar nova categoria
-  const handleAddCategory = () => {
-    if (!newCategoryName.trim()) return;
+    const userCategories = loadUserCategories();
+    const allCategories = userCategories.length > 0 
+      ? [...defaultCategories, ...userCategories] 
+      : [...defaultCategories];
     
-    const id = newCategoryName.toLowerCase()
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .replace(/[^a-z0-9]/g, "_");
-    
-    const keywords = newCategoryKeywords
-      .split(',')
-      .map(k => k.trim())
-      .filter(k => k.length > 0);
-    
-    const newCategory: CategoryDefinition = {
-      id,
-      name: newCategoryName,
-      color: newCategoryColor,
-      description: newCategoryDescription,
-      keywords
-    };
-    
-    setUserCategories([...userCategories, newCategory]);
-    resetForm();
-  };
-
-  // Atualizar categoria existente
-  const handleUpdateCategory = () => {
-    if (!editingCategory || !newCategoryName.trim()) return;
-    
-    const keywords = newCategoryKeywords
-      .split(',')
-      .map(k => k.trim())
-      .filter(k => k.length > 0);
-    
-    const updatedCategory: CategoryDefinition = {
-      ...editingCategory,
-      name: newCategoryName,
-      color: newCategoryColor,
-      description: newCategoryDescription,
-      keywords
-    };
-    
-    const updatedCategories = userCategories.map(cat => 
-      cat.id === editingCategory.id ? updatedCategory : cat
+    // Remover duplicatas baseado no ID
+    const uniqueCategories = allCategories.filter((category, index, self) =>
+      index === self.findIndex((c) => c.id === category.id)
     );
     
-    setUserCategories(updatedCategories);
-    resetForm();
-    setIsEditing(false);
-    setEditingCategory(null);
+    setCategories(uniqueCategories);
+  }, []);
+
+  // Salvar categorias sempre que forem alteradas
+  useEffect(() => {
+    // Filtrar apenas categorias personalizadas (não padrão)
+    const defaultCategoryIds = defaultCategories.map(cat => cat.id);
+    const customCategories = categories.filter(cat => !defaultCategoryIds.includes(cat.id));
+    
+    if (customCategories.length > 0) {
+      saveUserCategories(customCategories);
+    }
+  }, [categories]);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
   };
 
-  // Deletar categoria
-  const handleDeleteCategory = (categoryId: string) => {
-    setUserCategories(userCategories.filter(cat => cat.id !== categoryId));
-  };
-
-  // Editar categoria
-  const startEditing = (category: CategoryDefinition) => {
-    setIsEditing(true);
-    setEditingCategory(category);
-    setNewCategoryName(category.name);
-    setNewCategoryColor(category.color);
-    setNewCategoryDescription(category.description);
-    setNewCategoryKeywords(category.keywords.join(', '));
-  };
-
-  // Reset form
   const resetForm = () => {
-    setNewCategoryName("");
-    setNewCategoryColor(categoryColors.other);
-    setNewCategoryDescription("");
-    setNewCategoryKeywords("");
-  };
-
-  // Cancelar edição
-  const handleCancelEdit = () => {
+    setFormData({
+      id: "",
+      name: "",
+      color: "#808080",
+      description: "",
+      keywords: "",
+    });
     setIsEditing(false);
-    setEditingCategory(null);
-    resetForm();
+    setCurrentCategory(null);
   };
 
-  // Toggle para mostrar/esconder categorias padrão
-  const toggleDefaultCategories = () => {
-    setShowDefaultCategories(!showDefaultCategories);
+  const handleAddCategory = () => {
+    // Validar os campos obrigatórios
+    if (!formData.name.trim()) {
+      toast({
+        title: "Erro",
+        description: "Nome da categoria é obrigatório.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Criar ID a partir do nome (slug)
+    const id = formData.id || formData.name.toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // Remove acentos
+      .replace(/[^\w\s]/g, '') // Remove caracteres especiais
+      .replace(/\s+/g, '_'); // Substitui espaços por underscore
+    
+    // Validar ID único
+    if (!isEditing && categories.some(cat => cat.id === id)) {
+      toast({
+        title: "Erro",
+        description: "Já existe uma categoria com esse nome.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Processar keywords
+    const keywords = formData.keywords.split(",")
+      .map(keyword => keyword.trim())
+      .filter(keyword => keyword);
+    
+    // Criar nova categoria
+    const newCategory: CategoryDefinition = {
+      id,
+      name: formData.name,
+      color: formData.color,
+      description: formData.description,
+      keywords,
+    };
+
+    if (isEditing && currentCategory) {
+      // Atualizar categoria existente
+      const updatedCategories = categories.map(cat => 
+        cat.id === currentCategory.id ? newCategory : cat
+      );
+      setCategories(updatedCategories);
+      
+      toast({
+        title: "Categoria atualizada",
+        description: `A categoria "${newCategory.name}" foi atualizada com sucesso.`,
+      });
+    } else {
+      // Adicionar nova categoria
+      setCategories([...categories, newCategory]);
+      
+      toast({
+        title: "Categoria adicionada",
+        description: `A categoria "${newCategory.name}" foi adicionada com sucesso.`,
+      });
+    }
+
+    // Limpar formulário e fechar dialog
+    resetForm();
+    setIsDialogOpen(false);
+    
+    // Notificar a mudança
+    onCategoryChange();
   };
+
+  const handleDeleteCategory = (categoryId: string) => {
+    // Verificar se é uma categoria padrão
+    if (defaultCategories.some(cat => cat.id === categoryId)) {
+      toast({
+        title: "Operação não permitida",
+        description: "Categorias padrão não podem ser excluídas.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Remover categoria
+    const updatedCategories = categories.filter(cat => cat.id !== categoryId);
+    setCategories(updatedCategories);
+    
+    toast({
+      title: "Categoria removida",
+      description: "A categoria foi removida com sucesso.",
+    });
+    
+    // Notificar a mudança
+    onCategoryChange();
+  };
+
+  const startEditing = (category: CategoryDefinition) => {
+    setCurrentCategory(category);
+    setFormData({
+      id: category.id,
+      name: category.name,
+      color: category.color,
+      description: category.description,
+      keywords: category.keywords.join(", "),
+    });
+    setIsEditing(true);
+    setIsDialogOpen(true);
+  };
+
+  const handleRestoreDefaults = () => {
+    // Filtrar categorias personalizadas
+    const defaultCategoryIds = defaultCategories.map(cat => cat.id);
+    const customCategories = categories.filter(cat => !defaultCategoryIds.includes(cat.id));
+    
+    // Restaurar categorias padrão e manter personalizadas
+    setCategories([...defaultCategories, ...customCategories]);
+    
+    toast({
+      title: "Categorias padrão restauradas",
+      description: "As categorias padrão foram restauradas com sucesso.",
+    });
+    
+    // Notificar a mudança
+    onCategoryChange();
+  };
+
+  // Verificar se há categorias personalizadas
+  const hasCustomCategories = categories.some(cat => 
+    !defaultCategories.map(d => d.id).includes(cat.id)
+  );
 
   return (
-    <Card className="mb-6">
-      <CardContent className="pt-6">
-        <div className="flex justify-between items-center mb-6">
+    <Card className="mb-6 border-border/40 shadow-sm">
+      <CardHeader>
+        <div className="flex flex-wrap items-start justify-between">
           <div>
-            <h2 className="text-xl font-bold mb-1">Gerenciamento de Categorias</h2>
-            <p className="text-muted-foreground text-sm">Personalize suas categorias para melhor organização</p>
+            <CardTitle className="flex items-center gap-2">
+              <Tags className="h-5 w-5" />
+              Gerenciador de Categorias
+            </CardTitle>
+            <CardDescription>
+              Categorize suas transações para análises mais precisas
+            </CardDescription>
           </div>
-          <div>
+          
+          <div className="flex gap-2 mt-2 sm:mt-0">
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button 
+                  onClick={() => {
+                    resetForm();
+                    setIsDialogOpen(true);
+                  }}
+                  className="gap-1"
+                >
+                  <Plus className="h-4 w-4" />
+                  Nova Categoria
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>
+                    {isEditing ? "Editar Categoria" : "Nova Categoria"}
+                  </DialogTitle>
+                  <DialogDescription>
+                    {isEditing 
+                      ? "Atualize os detalhes da categoria selecionada." 
+                      : "Crie uma nova categoria para classificar suas transações."}
+                  </DialogDescription>
+                </DialogHeader>
+                
+                <div className="grid gap-4 py-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="name">Nome da Categoria</Label>
+                    <Input
+                      id="name"
+                      name="name"
+                      placeholder="Ex: Restaurantes, Transporte"
+                      value={formData.name}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                  
+                  <div className="grid gap-2">
+                    <Label htmlFor="color" className="flex items-center gap-2">
+                      <PaintBucket className="h-4 w-4" />
+                      Cor
+                    </Label>
+                    <div className="flex gap-2 items-center">
+                      <Input
+                        id="color"
+                        name="color"
+                        type="color"
+                        className="w-16 h-8 p-1"
+                        value={formData.color}
+                        onChange={handleInputChange}
+                      />
+                      <div 
+                        className="flex-1 p-2 rounded-md font-medium"
+                        style={{ 
+                          backgroundColor: `${formData.color}15`,
+                          color: formData.color,
+                          border: `1px solid ${formData.color}30`
+                        }}
+                      >
+                        {formData.name || "Nome da Categoria"}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="grid gap-2">
+                    <Label htmlFor="description">Descrição (opcional)</Label>
+                    <Input
+                      id="description"
+                      name="description"
+                      placeholder="Descrição da categoria"
+                      value={formData.description}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                  
+                  <div className="grid gap-2">
+                    <Label htmlFor="keywords" className="flex items-center gap-2">
+                      <Tag className="h-4 w-4" />
+                      Palavras-chave
+                      <span className="text-xs text-muted-foreground font-normal">
+                        (separadas por vírgula)
+                      </span>
+                    </Label>
+                    <Input
+                      id="keywords"
+                      name="keywords"
+                      placeholder="restaurante, delivery, ifood"
+                      value={formData.keywords}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                </div>
+                
+                <DialogFooter className="gap-2">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                      resetForm();
+                      setIsDialogOpen(false);
+                    }}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button 
+                    onClick={handleAddCategory}
+                    className="gap-1"
+                  >
+                    <Save className="h-4 w-4" />
+                    {isEditing ? "Atualizar" : "Adicionar"} Categoria
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+            
             <Button 
               variant="outline" 
-              size="sm" 
-              onClick={toggleDefaultCategories}
-              className="flex items-center gap-1"
+              onClick={handleRestoreDefaults}
+              size="icon"
+              title="Restaurar categorias padrão"
             >
-              {showDefaultCategories ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              {showDefaultCategories ? "Ocultar Padrão" : "Mostrar Padrão"}
+              <Info className="h-4 w-4" />
             </Button>
           </div>
         </div>
-
-        <Tabs defaultValue="categories" className="w-full">
-          <TabsList className="mb-6">
-            <TabsTrigger value="categories">Categorias</TabsTrigger>
-            <TabsTrigger value="add">Adicionar/Editar</TabsTrigger>
+      </CardHeader>
+      
+      <CardContent>
+        <Tabs defaultValue="all">
+          <TabsList className="mb-4">
+            <TabsTrigger value="all">Todas</TabsTrigger>
+            <TabsTrigger value="default">Padrão</TabsTrigger>
+            <TabsTrigger value="custom">Personalizadas</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="categories">
-            <ScrollArea className="h-[400px]">
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                {categories.map((category) => (
-                  <div key={category.id} className="rounded-lg border p-4 relative">
-                    <div 
-                      className="absolute left-0 top-0 bottom-0 w-2 rounded-tl-lg rounded-bl-lg"
-                      style={{ backgroundColor: category.color }}
-                    ></div>
-                    
-                    <div className="pl-2">
-                      <div className="flex justify-between items-start">
-                        <h3 className="font-medium">{category.name}</h3>
-                        
-                        {/* Mostrar os botões de editar/excluir somente para categorias de usuários */}
-                        {userCategories.some(cat => cat.id === category.id) && (
-                          <div className="flex gap-1">
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              className="h-6 w-6" 
-                              onClick={() => startEditing(category)}
-                            >
-                              <Pencil className="h-3 w-3" />
-                            </Button>
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              className="h-6 w-6 text-destructive" 
-                              onClick={() => handleDeleteCategory(category.id)}
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-                      
-                      <p className="text-xs text-muted-foreground mt-1">{category.description}</p>
+          <TabsContent value="all">
+            <Accordion type="multiple" className="w-full">
+              {categories.map(category => (
+                <AccordionItem key={category.id} value={category.id}>
+                  <AccordionTrigger className="py-3">
+                    <div className="flex items-center gap-3">
+                      <div 
+                        className="w-3 h-3 rounded-full" 
+                        style={{ backgroundColor: category.color }}
+                      />
+                      <span>{category.name}</span>
+                      {category.keywords.length > 0 && (
+                        <span className="text-xs text-muted-foreground font-normal">
+                          ({category.keywords.length} palavra{category.keywords.length !== 1 ? 's' : ''})
+                        </span>
+                      )}
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <div className="pl-6 py-2 space-y-3">
+                      {category.description && (
+                        <p className="text-sm">{category.description}</p>
+                      )}
                       
                       {category.keywords.length > 0 && (
-                        <div className="mt-3">
-                          <h4 className="text-xs font-medium flex items-center gap-1">
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <div className="flex items-center">
-                                    <Info className="h-3 w-3 text-muted-foreground" />
-                                    <span>Palavras-chave</span>
-                                  </div>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  Estas palavras são usadas para categorização automática
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-                          </h4>
-                          <div className="flex flex-wrap gap-1 mt-1">
-                            {category.keywords.slice(0, 4).map((keyword, idx) => (
+                        <div>
+                          <h4 className="text-sm font-medium mb-1">Palavras-chave:</h4>
+                          <div className="flex flex-wrap gap-1">
+                            {category.keywords.map((keyword, i) => (
                               <span 
-                                key={idx} 
-                                className="text-xs bg-muted px-2 py-0.5 rounded-full"
+                                key={i}
+                                className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-muted"
                               >
                                 {keyword}
                               </span>
                             ))}
-                            {category.keywords.length > 4 && (
-                              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">
-                                +{category.keywords.length - 4}
-                              </span>
-                            )}
                           </div>
                         </div>
                       )}
+                      
+                      <div className="flex items-center gap-2 mt-2 pt-2 border-t">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-8 px-2 text-xs"
+                          onClick={() => startEditing(category)}
+                        >
+                          <Edit className="h-3.5 w-3.5 mr-1" />
+                          Editar
+                        </Button>
+                        
+                        {!defaultCategories.some(cat => cat.id === category.id) && (
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            className="h-8 px-2 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
+                            onClick={() => handleDeleteCategory(category.id)}
+                          >
+                            <Trash2 className="h-3.5 w-3.5 mr-1" />
+                            Excluir
+                          </Button>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            </ScrollArea>
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
           </TabsContent>
           
-          <TabsContent value="add">
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="category-name">Nome da Categoria</Label>
-                  <Input 
-                    id="category-name" 
-                    placeholder="Ex: Viagens, Educação, etc." 
-                    value={newCategoryName}
-                    onChange={(e) => setNewCategoryName(e.target.value)}
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="category-color">Cor</Label>
-                  <div className="flex items-center gap-2">
-                    <div 
-                      className="w-10 h-10 rounded-full border"
-                      style={{ backgroundColor: newCategoryColor }}
-                    ></div>
-                    <select 
-                      id="category-color"
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                      value={newCategoryColor}
-                      onChange={(e) => setNewCategoryColor(e.target.value)}
-                    >
-                      {Object.entries(categoryColors).map(([name, color]) => (
-                        <option key={name} value={color}>
-                          {name.charAt(0).toUpperCase() + name.slice(1)}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="category-description">Descrição</Label>
-                <Input 
-                  id="category-description" 
-                  placeholder="Descreva quando usar esta categoria" 
-                  value={newCategoryDescription}
-                  onChange={(e) => setNewCategoryDescription(e.target.value)}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <Label htmlFor="category-keywords">Palavras-chave para detecção automática</Label>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Info className="h-4 w-4 text-muted-foreground" />
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        Palavras separadas por vírgula que serão usadas para categorizar automaticamente suas transações
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
-                <Input 
-                  id="category-keywords" 
-                  placeholder="restaurante, mercado, supermercado, etc. (separadas por vírgula)" 
-                  value={newCategoryKeywords}
-                  onChange={(e) => setNewCategoryKeywords(e.target.value)}
-                />
-              </div>
-              
-              <div className="pt-4 flex justify-end gap-2">
-                {isEditing && (
-                  <Button variant="outline" onClick={handleCancelEdit}>
-                    Cancelar
-                  </Button>
-                )}
+          <TabsContent value="default">
+            <Accordion type="multiple" className="w-full">
+              {defaultCategories.map(category => (
+                <AccordionItem key={category.id} value={category.id}>
+                  <AccordionTrigger className="py-3">
+                    <div className="flex items-center gap-3">
+                      <div 
+                        className="w-3 h-3 rounded-full" 
+                        style={{ backgroundColor: category.color }}
+                      />
+                      <span>{category.name}</span>
+                      {category.keywords.length > 0 && (
+                        <span className="text-xs text-muted-foreground font-normal">
+                          ({category.keywords.length} palavra{category.keywords.length !== 1 ? 's' : ''})
+                        </span>
+                      )}
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <div className="pl-6 py-2 space-y-3">
+                      {category.description && (
+                        <p className="text-sm">{category.description}</p>
+                      )}
+                      
+                      {category.keywords.length > 0 && (
+                        <div>
+                          <h4 className="text-sm font-medium mb-1">Palavras-chave:</h4>
+                          <div className="flex flex-wrap gap-1">
+                            {category.keywords.map((keyword, i) => (
+                              <span 
+                                key={i}
+                                className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-muted"
+                              >
+                                {keyword}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      
+                      <div className="flex items-center gap-2 mt-2 pt-2 border-t">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-8 px-2 text-xs"
+                          onClick={() => startEditing(category)}
+                        >
+                          <Edit className="h-3.5 w-3.5 mr-1" />
+                          Editar
+                        </Button>
+                      </div>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          </TabsContent>
+          
+          <TabsContent value="custom">
+            {hasCustomCategories ? (
+              <Accordion type="multiple" className="w-full">
+                {categories
+                  .filter(cat => !defaultCategories.some(d => d.id === cat.id))
+                  .map(category => (
+                    <AccordionItem key={category.id} value={category.id}>
+                      <AccordionTrigger className="py-3">
+                        <div className="flex items-center gap-3">
+                          <div 
+                            className="w-3 h-3 rounded-full" 
+                            style={{ backgroundColor: category.color }}
+                          />
+                          <span>{category.name}</span>
+                          {category.keywords.length > 0 && (
+                            <span className="text-xs text-muted-foreground font-normal">
+                              ({category.keywords.length} palavra{category.keywords.length !== 1 ? 's' : ''})
+                            </span>
+                          )}
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent>
+                        <div className="pl-6 py-2 space-y-3">
+                          {category.description && (
+                            <p className="text-sm">{category.description}</p>
+                          )}
+                          
+                          {category.keywords.length > 0 && (
+                            <div>
+                              <h4 className="text-sm font-medium mb-1">Palavras-chave:</h4>
+                              <div className="flex flex-wrap gap-1">
+                                {category.keywords.map((keyword, i) => (
+                                  <span 
+                                    key={i}
+                                    className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-muted"
+                                  >
+                                    {keyword}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          
+                          <div className="flex items-center gap-2 mt-2 pt-2 border-t">
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="h-8 px-2 text-xs"
+                              onClick={() => startEditing(category)}
+                            >
+                              <Edit className="h-3.5 w-3.5 mr-1" />
+                              Editar
+                            </Button>
+                            
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              className="h-8 px-2 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
+                              onClick={() => handleDeleteCategory(category.id)}
+                            >
+                              <Trash2 className="h-3.5 w-3.5 mr-1" />
+                              Excluir
+                            </Button>
+                          </div>
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+                  ))}
+              </Accordion>
+            ) : (
+              <div className="text-center py-8">
+                <Tags className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
+                <h3 className="text-lg font-medium mb-1">Nenhuma categoria personalizada</h3>
+                <p className="text-muted-foreground text-sm mb-4">
+                  Crie categorias personalizadas para organizar melhor suas transações
+                </p>
                 <Button 
-                  onClick={isEditing ? handleUpdateCategory : handleAddCategory}
-                  className="flex items-center gap-2"
+                  onClick={() => {
+                    resetForm();
+                    setIsDialogOpen(true);
+                  }}
+                  variant="outline"
+                  className="gap-1"
                 >
-                  {isEditing ? (
-                    <>
-                      <Save className="h-4 w-4" />
-                      Atualizar Categoria
-                    </>
-                  ) : (
-                    <>
-                      <CirclePlus className="h-4 w-4" />
-                      Adicionar Categoria
-                    </>
-                  )}
+                  <Plus className="h-4 w-4" />
+                  Nova Categoria
                 </Button>
               </div>
-            </div>
+            )}
           </TabsContent>
         </Tabs>
       </CardContent>

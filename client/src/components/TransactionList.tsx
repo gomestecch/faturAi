@@ -199,55 +199,60 @@ export default function TransactionList({ transactions, onCategoryUpdate }: Tran
   };
   
   return (
-    <Card>
+    <Card className="mb-6 border-border/40 shadow-sm">
       <CardContent className="pt-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-6">
-          <h2 className="text-lg font-medium text-foreground mb-2 md:mb-0">Transações</h2>
+          <div>
+            <h2 className="text-xl font-bold mb-1">Transações</h2>
+            <p className="text-muted-foreground text-sm">Histórico detalhado de gastos</p>
+          </div>
           
           {/* Filters */}
-          <div className="flex flex-wrap gap-2">
-            <Select 
-              value={category} 
-              onValueChange={setCategory}
-            >
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Todas as categorias" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  <SelectItem value="all">Todas as categorias</SelectItem>
-                  {categories.map((cat, index) => (
-                    <SelectItem key={index} value={cat}>{cat}</SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-            
-            <Select 
-              value={sortOrder} 
-              onValueChange={setSortOrder}
-            >
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Ordenar por" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  <SelectItem value="date_desc">Data (recente)</SelectItem>
-                  <SelectItem value="date_asc">Data (antiga)</SelectItem>
-                  <SelectItem value="amount_desc">Valor (maior)</SelectItem>
-                  <SelectItem value="amount_asc">Valor (menor)</SelectItem>
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-            
-            <div className="relative">
+          <div className="flex flex-wrap gap-2 mt-4 md:mt-0">
+            <div className="relative w-full md:w-[250px]">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Pesquisar..."
-                className="pl-8 w-full md:w-[200px]"
+                placeholder="Pesquisar descrição ou categoria..."
+                className="pl-8"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
+            </div>
+            
+            <div className="flex gap-2">
+              <Select 
+                value={category} 
+                onValueChange={setCategory}
+              >
+                <SelectTrigger className="w-[210px] gap-1">
+                  <SlidersHorizontal className="h-4 w-4" />
+                  <SelectValue placeholder="Todas as categorias" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectItem value="all">Todas as categorias</SelectItem>
+                    {formatCategoryOptions()}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+              
+              <Select 
+                value={sortOrder} 
+                onValueChange={setSortOrder}
+              >
+                <SelectTrigger className="w-[180px] gap-1">
+                  <ArrowUpDown className="h-4 w-4" />
+                  <SelectValue placeholder="Ordenar por" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectItem value="date_desc">Data (recente)</SelectItem>
+                    <SelectItem value="date_asc">Data (antiga)</SelectItem>
+                    <SelectItem value="amount_desc">Valor (maior)</SelectItem>
+                    <SelectItem value="amount_asc">Valor (menor)</SelectItem>
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </div>
@@ -331,9 +336,9 @@ export default function TransactionList({ transactions, onCategoryUpdate }: Tran
         
         {/* Pagination */}
         {filteredTransactions.length > 0 && (
-          <div className="flex items-center justify-between mt-6">
+          <div className="flex flex-col md:flex-row items-center justify-between mt-6 gap-4">
             <div className="text-sm text-muted-foreground">
-              Mostrando <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span> a <span className="font-medium">
+              Mostrando <span className="font-medium">{Math.min(filteredTransactions.length, 1) > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0}</span> a <span className="font-medium">
                 {Math.min(currentPage * itemsPerPage, filteredTransactions.length)}
               </span> de <span className="font-medium">{filteredTransactions.length}</span> transações
             </div>
