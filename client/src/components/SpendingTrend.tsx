@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import Chart from "chart.js/auto";
 import { formatCurrency } from "@/lib/utils";
 import { Transaction } from "@/types";
+import { nubankColors } from "@/lib/nubank-theme";
 
 interface SpendingTrendProps {
   transactions: Transaction[];
@@ -70,10 +71,15 @@ export default function SpendingTrend({
           datasets: [{
             label: 'Gastos Diários',
             data: spendingData,
-            borderColor: 'hsl(var(--primary))',
-            backgroundColor: 'hsla(var(--primary), 0.1)',
+            borderColor: nubankColors.primary,
+            backgroundColor: `rgba(138, 5, 190, 0.1)`,
             fill: true,
-            tension: 0.4
+            tension: 0.4,
+            pointBackgroundColor: nubankColors.primary,
+            pointBorderColor: '#fff',
+            pointBorderWidth: 2,
+            pointRadius: 4,
+            pointHoverRadius: 6
           }]
         },
         options: {
@@ -84,6 +90,11 @@ export default function SpendingTrend({
               display: false
             },
             tooltip: {
+              backgroundColor: nubankColors.background,
+              titleColor: nubankColors.textPrimary,
+              bodyColor: nubankColors.textPrimary,
+              borderColor: nubankColors.primary,
+              borderWidth: 1,
               callbacks: {
                 label: function(context) {
                   return formatCurrency(context.parsed.y);
@@ -95,11 +106,18 @@ export default function SpendingTrend({
             x: {
               grid: {
                 display: false
+              },
+              ticks: {
+                color: nubankColors.textTertiary
               }
             },
             y: {
               beginAtZero: true,
+              grid: {
+                color: 'rgba(138, 5, 190, 0.1)'
+              },
               ticks: {
+                color: nubankColors.textTertiary,
                 callback: function(value) {
                   return formatCurrency(value as number);
                 }
@@ -119,6 +137,7 @@ export default function SpendingTrend({
   
   return (
     <div className="chart-container h-[250px]">
+      <h3 className="text-sm font-medium mb-2" style={{ color: nubankColors.primary }}>Tendência de Gastos ({timeFrame})</h3>
       <canvas ref={chartRef}></canvas>
     </div>
   );

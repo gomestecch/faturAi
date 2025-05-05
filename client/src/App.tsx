@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { Switch, Route } from "wouter";
+import { Switch, Route, Link } from "wouter";
 import { Toaster } from "@/components/ui/toaster";
 import { useToast } from "@/hooks/use-toast";
 import NotFound from "@/pages/not-found";
@@ -12,7 +12,7 @@ import Footer from "@/components/Footer";
 import { Transaction } from "@/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { X, Download, Upload, Save, Trash2 } from "lucide-react";
+import { X, Download, Upload, Save, Trash2, Plus } from "lucide-react";
 import { 
   AlertDialog,
   AlertDialogAction,
@@ -31,6 +31,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { detectCategory } from "@/lib/categories";
 import { saveTransactions, loadTransactions, clearAllData, hasSavedData } from "@/lib/storage";
+import { nubankColors } from "@/lib/nubank-theme";
+
+// Import pages
+import ImportPage from "@/pages/import-page";
+import CategoriesPage from "@/pages/categories-page";
+import HomePage from "@/pages/home-page";
 
 function App() {
   const { toast } = useToast();
@@ -229,20 +235,35 @@ function App() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <Switch>
             <Route path="/">
-              <>
-                <FileUpload
-                  onUpload={handleFileUpload}
-                  isLoading={isLoading}
-                  setIsLoading={setIsLoading}
-                  error={error}
-                  fileName={null}
-                  transactionCount={allTransactions.length}
-                  allowMultiple={true}
-                />
+              <div className="mb-6">
+                <div className="flex justify-between items-center mb-8">
+                  <h1 className="text-3xl font-bold" style={{ color: nubankColors.primary }}>Dashboard FaturAi</h1>
+                  <div className="flex gap-3">
+                    <Link href="/import">
+                      <Button style={{ 
+                        backgroundColor: nubankColors.primary, 
+                        color: 'white',
+                        border: 'none'
+                      }}>
+                        <Upload className="h-4 w-4 mr-2" />
+                        Importar Faturas
+                      </Button>
+                    </Link>
+                    <Link href="/categories">
+                      <Button variant="outline" style={{ 
+                        borderColor: nubankColors.primary, 
+                        color: nubankColors.primary 
+                      }}>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Gerenciar Categorias
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
                 
-                {/* File list */}
+                {/* Lista de arquivos importados */}
                 {uploadedFiles.length > 0 && (
-                  <div className="mt-4 mb-6">
+                  <div className="mb-6">
                     <div className="flex flex-wrap justify-between items-center mb-2">
                       <h3 className="text-sm font-medium">Arquivos importados:</h3>
                       
@@ -287,12 +308,22 @@ function App() {
                   </div>
                 )}
                 
-                {hasTransactions && (
+                {hasTransactions ? (
                   <>
                     <DateRangeFilter onDateRangeChange={handleDateRangeChange} />
-                    <CategoryManager onCategoryChange={handleCategoryUpdated} />
                     <Dashboard transactions={filteredTransactions} />
                   </>
+                ) : (
+                  <div className="text-center py-12 px-4 rounded-lg border-2 border-dashed" style={{borderColor: nubankColors.primaryLight}}>
+                    <h3 className="text-lg font-medium mb-2" style={{color: nubankColors.primary}}>Nenhuma transação importada</h3>
+                    <p className="mb-4 text-sm" style={{color: nubankColors.textTertiary}}>Comece importando suas faturas do cartão de crédito</p>
+                    <Link href="/import">
+                      <Button style={{ backgroundColor: nubankColors.primary, color: 'white' }}>
+                        <Upload className="h-4 w-4 mr-2" />
+                        Importar Faturas
+                      </Button>
+                    </Link>
+                  </div>
                 )}
                 
                 {/* Diálogo de confirmação para limpar dados */}
@@ -313,7 +344,13 @@ function App() {
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>
-              </>
+              </div>
+            </Route>
+            <Route path="/import">
+              <ImportPage />
+            </Route>
+            <Route path="/categories">
+              <CategoriesPage />
             </Route>
             <Route component={NotFound} />
           </Switch>

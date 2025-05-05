@@ -2,6 +2,7 @@ import { useEffect, useRef, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import Chart from "chart.js/auto";
 import { Transaction } from "@/types";
+import { nubankColors } from "@/lib/nubank-theme";
 
 interface TransactionFrequencyProps {
   transactions: Transaction[];
@@ -67,7 +68,9 @@ export default function TransactionFrequency({
           datasets: [{
             label: 'Número de Transações',
             data: frequencyData.data,
-            backgroundColor: 'hsl(var(--secondary))'
+            backgroundColor: nubankColors.primary,
+            hoverBackgroundColor: nubankColors.primaryLight,
+            borderRadius: 4
           }]
         },
         options: {
@@ -76,19 +79,33 @@ export default function TransactionFrequency({
           plugins: {
             legend: {
               display: false
+            },
+            tooltip: {
+              backgroundColor: nubankColors.background,
+              titleColor: nubankColors.textPrimary,
+              bodyColor: nubankColors.textPrimary,
+              borderColor: nubankColors.primary,
+              borderWidth: 1
             }
           },
           scales: {
             x: {
               grid: {
                 display: false
+              },
+              ticks: {
+                color: nubankColors.textTertiary
               }
             },
             y: {
               beginAtZero: true,
               ticks: {
                 precision: 0,
-                stepSize: 1
+                stepSize: 1,
+                color: nubankColors.textTertiary
+              },
+              grid: {
+                color: 'rgba(138, 5, 190, 0.1)'
               }
             }
           }
@@ -104,9 +121,9 @@ export default function TransactionFrequency({
   }, [frequencyData]);
   
   return (
-    <Card className={className}>
+    <Card className={`${className} border-t-4`} style={{ borderTopColor: nubankColors.primary }}>
       <CardContent className="pt-6">
-        <h2 className="text-lg font-medium text-foreground mb-4">Frequência de Transações</h2>
+        <h2 className="text-lg font-medium mb-4" style={{ color: nubankColors.primary }}>Frequência de Transações</h2>
         <div className="chart-container h-[250px]">
           <canvas ref={chartRef}></canvas>
         </div>
